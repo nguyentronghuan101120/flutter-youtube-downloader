@@ -1,37 +1,68 @@
+import 'package:dartz/dartz.dart';
+import '../../core/error/failures.dart';
+
 abstract class StorageRepository {
-  /// Lấy đường dẫn thư mục download mặc định
-  Future<String> getDefaultDownloadPath();
+  /// Gets the download directory path
+  Future<Either<Failure, String>> getDownloadDirectory();
 
-  /// Lấy đường dẫn thư mục tạm
-  Future<String> getTempPath();
+  /// Creates a new directory
+  Future<Either<Failure, String>> createDirectory(String path);
 
-  /// Kiểm tra quyền truy cập storage
-  Future<bool> hasStoragePermission();
+  /// Checks if a file exists
+  Future<Either<Failure, bool>> fileExists(String filePath);
 
-  /// Yêu cầu quyền truy cập storage
-  Future<bool> requestStoragePermission();
+  /// Gets file size in bytes
+  Future<Either<Failure, int>> getFileSize(String filePath);
 
-  /// Kiểm tra dung lượng trống
-  Future<int> getAvailableSpace();
+  /// Deletes a file
+  Future<Either<Failure, bool>> deleteFile(String filePath);
 
-  /// Kiểm tra có đủ dung lượng không
-  Future<bool> hasEnoughSpace(int requiredBytes);
+  /// Moves a file to a new location
+  Future<Either<Failure, String>> moveFile(
+    String sourcePath,
+    String destinationPath,
+  );
 
-  /// Tạo thư mục nếu chưa tồn tại
-  Future<void> createDirectory(String path);
+  /// Copies a file to a new location
+  Future<Either<Failure, String>> copyFile(
+    String sourcePath,
+    String destinationPath,
+  );
 
-  /// Kiểm tra file có tồn tại không
-  Future<bool> fileExists(String filePath);
+  /// Lists all files in a directory
+  Future<Either<Failure, List<String>>> listFiles(String directoryPath);
 
-  /// Xóa file
-  Future<void> deleteFile(String filePath);
+  /// Gets available storage space in bytes
+  Future<Either<Failure, int>> getAvailableStorageSpace();
 
-  /// Di chuyển file
-  Future<void> moveFile(String sourcePath, String destinationPath);
+  /// Gets total storage space in bytes
+  Future<Either<Failure, int>> getTotalStorageSpace();
 
-  /// Lấy kích thước file
-  Future<int> getFileSize(String filePath);
+  /// Organizes downloaded files by type
+  Future<Either<Failure, bool>> organizeFiles();
 
-  /// Lấy danh sách file trong thư mục
-  Future<List<String>> getFilesInDirectory(String directoryPath);
+  /// Cleans up temporary files
+  Future<Either<Failure, bool>> cleanupTempFiles();
+
+  /// Gets file information
+  Future<Either<Failure, FileInfo>> getFileInfo(String filePath);
+}
+
+/// File information data class
+class FileInfo {
+  final String path;
+  final String name;
+  final int size;
+  final DateTime createdAt;
+  final DateTime modifiedAt;
+  final bool isDirectory;
+
+  FileInfo({
+    required this.path,
+    required this.name,
+    required this.size,
+    required this.createdAt,
+    required this.modifiedAt,
+    required this.isDirectory,
+  });
 }

@@ -12,8 +12,12 @@
 import 'package:dio/dio.dart' as _i361;
 import 'package:flutter_youtube_downloader/core/dependency_injection/external_module.dart'
     as _i429;
+import 'package:flutter_youtube_downloader/core/services/queue_manager.dart'
+    as _i780;
 import 'package:flutter_youtube_downloader/core/services/youtube_service.dart'
     as _i691;
+import 'package:flutter_youtube_downloader/data/datasources/file_download_datasource.dart'
+    as _i323;
 import 'package:flutter_youtube_downloader/data/datasources/preferences_datasource.dart'
     as _i406;
 import 'package:flutter_youtube_downloader/data/datasources/preferences_datasource_impl.dart'
@@ -67,6 +71,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i706.Uuid>(() => externalModule.uuid);
     gh.lazySingleton<_i361.Dio>(() => externalModule.dio);
     gh.factory<_i244.StorageRepository>(() => _i76.StorageRepositoryImpl());
+    gh.factory<_i780.QueueManager>(
+      () => _i780.QueueManager(maxConcurrentDownloads: gh<int>()),
+    );
     gh.factory<_i406.PreferencesDataSource>(
       () => _i69.PreferencesDataSourceImpl(),
     );
@@ -76,7 +83,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i142.VideoRepository>(
       () => _i132.VideoRepositoryImpl(gh<_i446.YouTubeDataSource>()),
     );
-    gh.factory<_i856.DownloadRepository>(() => _i888.DownloadRepositoryImpl());
     gh.factory<_i311.AnalyzeVideoUseCase>(
       () => _i311.AnalyzeVideoUseCase(gh<_i142.VideoRepository>()),
     );
@@ -85,6 +91,11 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i384.VideoAnalysisCubit>(
       () => _i384.VideoAnalysisCubit(gh<_i311.AnalyzeVideoUseCase>()),
+    );
+    gh.factory<_i856.DownloadRepository>(
+      () => _i888.DownloadRepositoryImpl(
+        fileDownloadDataSource: gh<_i323.FileDownloadDataSource>(),
+      ),
     );
     gh.factory<_i691.YouTubeService>(
       () => _i691.YouTubeService(gh<_i578.YoutubeExplode>(), gh<_i361.Dio>()),
