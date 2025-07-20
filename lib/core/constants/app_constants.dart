@@ -50,9 +50,6 @@ class AppConstants {
     '256kbps',
     '320kbps',
   ];
-
-  enum DownloadType {
-    audioOnly,
-    videoOnly,
-  }
 }
+
+enum DownloadType { audioOnly, videoOnly }

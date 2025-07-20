@@ -60,6 +60,9 @@ dependencies:
   # Database
   sqflite: ^2.4.2
 
+  # Local Storage
+  shared_preferences: ^2.5.3
+
   # Internationalization
   intl: ^0.20.2
   flutter_localizations:

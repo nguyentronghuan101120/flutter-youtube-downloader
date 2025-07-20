@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/dependency_injection/injection_container.dart' as di;
 import 'presentation/bloc/video_analysis/video_analysis_cubit.dart';
+import 'presentation/bloc/preferences/preferences_cubit.dart';
 import 'presentation/pages/home_page.dart';
 
 void main() async {
@@ -20,6 +21,9 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider<VideoAnalysisCubit>(
           create: (context) => di.sl<VideoAnalysisCubit>(),
+        ),
+        BlocProvider<PreferencesCubit>(
+          create: (context) => di.sl<PreferencesCubit>(),
         ),
       ],
       child: MaterialApp(

@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/usecases/analyze_video.dart';
-import '../../../domain/entities/video_info.dart';
 import '../../../core/error/failures.dart';
 import 'video_analysis_state.dart';
 

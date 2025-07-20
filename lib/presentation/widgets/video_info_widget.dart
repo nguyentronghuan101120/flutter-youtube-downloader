@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_constants.dart';
 import '../../domain/entities/video_info.dart';
 
 class VideoInfoWidget extends StatelessWidget {
   final VideoInfo videoInfo;
+  final DownloadType downloadType;
+  final String selectedFormat;
+  final String selectedQuality;
 
-  const VideoInfoWidget({super.key, required this.videoInfo});
+  const VideoInfoWidget({
+    super.key,
+    required this.videoInfo,
+    required this.downloadType,
+    required this.selectedFormat,
+    required this.selectedQuality,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -89,47 +99,236 @@ class VideoInfoWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Video streams
-          if (videoInfo.videoStreams.isNotEmpty) ...[
-            Text(
-              'Video Formats',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            ...videoInfo.videoStreams.map(
-              (stream) => _buildStreamCard(
-                context,
-                stream.quality,
-                stream.format,
-                stream.fileSize,
-                stream.bitrate,
-                Icons.video_file,
-              ),
-            ),
-            const SizedBox(height: 16),
+          // Video streams - chỉ hiển thị khi chọn Video Only và có stream phù hợp
+          if (downloadType == DownloadType.videoOnly) ...[
+            _buildVideoStreamsSection(context),
           ],
 
-          // Audio streams
-          if (videoInfo.audioStreams.isNotEmpty) ...[
-            Text(
-              'Audio Formats',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            ...videoInfo.audioStreams.map(
-              (stream) => _buildStreamCard(
-                context,
-                '${stream.bitrate ~/ 1000}kbps',
-                stream.format,
-                stream.fileSize,
-                stream.bitrate,
-                Icons.audiotrack,
+          // Audio streams - chỉ hiển thị khi chọn Audio Only và có stream phù hợp
+          if (downloadType == DownloadType.audioOnly) ...[
+            _buildAudioStreamsSection(context),
+          ],
+
+          // Thông báo khi không có stream phù hợp
+          if (_getMatchingStreams().isEmpty) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.orange[700],
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            downloadType == DownloadType.audioOnly
+                                ? 'No ${selectedFormat.toLowerCase()} audio streams available'
+                                : 'No ${selectedFormat.toLowerCase()} video streams available with $selectedQuality quality',
+                            style: TextStyle(
+                              color: Colors.orange[700],
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Available alternatives:',
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildAvailableAlternatives(context),
+                  ],
+                ),
               ),
             ),
           ],
         ],
       ),
     );
+  }
+
+  Widget _buildVideoStreamsSection(BuildContext context) {
+    final matchingStreams = _getMatchingStreams();
+
+    if (matchingStreams.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Available Video Formats',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 8),
+        ...matchingStreams.map(
+          (stream) => _buildStreamCard(
+            context,
+            stream.quality,
+            stream.format,
+            stream.fileSize,
+            stream.bitrate,
+            Icons.video_file,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAudioStreamsSection(BuildContext context) {
+    final matchingStreams = _getMatchingStreams();
+
+    if (matchingStreams.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Available Audio Formats',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 8),
+        ...matchingStreams.map(
+          (stream) => _buildStreamCard(
+            context,
+            '${stream.bitrate ~/ 1000}kbps',
+            stream.format,
+            stream.fileSize,
+            stream.bitrate,
+            Icons.audiotrack,
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<dynamic> _getMatchingStreams() {
+    if (downloadType == DownloadType.audioOnly) {
+      debugPrint('Audio Only selected, format: $selectedFormat');
+      debugPrint(
+        'Available audio streams: ${videoInfo.audioStreams.map((s) => s.format).toList()}',
+      );
+
+      return videoInfo.audioStreams.where((stream) {
+        final matches =
+            selectedFormat.toUpperCase() == stream.format.toUpperCase();
+        debugPrint(
+          'Checking ${stream.format} against $selectedFormat: $matches',
+        );
+        return matches;
+      }).toList();
+    } else {
+      debugPrint(
+        'Video Only selected, format: $selectedFormat, quality: $selectedQuality',
+      );
+      debugPrint(
+        'Available video streams: ${videoInfo.videoStreams.map((s) => '${s.format}(${s.quality})').toList()}',
+      );
+
+      return videoInfo.videoStreams.where((stream) {
+        // Kiểm tra format
+        if (selectedFormat.toUpperCase() != stream.format.toUpperCase()) {
+          return false;
+        }
+        // Kiểm tra quality
+        if (selectedQuality.isNotEmpty && stream.quality != selectedQuality) {
+          return false;
+        }
+        return true;
+      }).toList();
+    }
+  }
+
+  Widget _buildAvailableAlternatives(BuildContext context) {
+    if (downloadType == DownloadType.audioOnly) {
+      if (videoInfo.audioStreams.isEmpty) {
+        return Text(
+          'No audio streams available for this video',
+          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+        );
+      }
+
+      final audioStreams = videoInfo.audioStreams.cast<AudioStream>();
+      final formats = audioStreams.map((s) => s.format.toUpperCase()).toSet();
+      final availableOptions = formats.map((f) => 'Audio: $f').toList();
+
+      return Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: availableOptions
+            .take(6)
+            .map(
+              (option) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Text(
+                  option,
+                  style: TextStyle(
+                    color: Colors.blue[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      );
+    } else {
+      if (videoInfo.videoStreams.isEmpty) {
+        return Text(
+          'No video streams available for this video',
+          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+        );
+      }
+
+      final videoStreams = videoInfo.videoStreams.cast<VideoStream>();
+      final formatQualityPairs = videoStreams
+          .map((s) => '${s.format.toUpperCase()} (${s.quality})')
+          .toSet();
+      final availableOptions = formatQualityPairs.toList();
+
+      return Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: availableOptions
+            .take(6)
+            .map(
+              (option) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Text(
+                  option,
+                  style: TextStyle(
+                    color: Colors.blue[700],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      );
+    }
   }
 
   Widget _buildStreamCard(
@@ -148,10 +347,12 @@ class VideoInfoWidget extends StatelessWidget {
         subtitle: Text('${_formatFileSize(fileSize)} • ${bitrate ~/ 1000}kbps'),
         trailing: ElevatedButton(
           onPressed: () {
-            // TODO: Implement download functionality
+            // TODO: Implement download functionality with selected format and quality
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Download functionality coming soon!'),
+              SnackBar(
+                content: Text(
+                  'Downloading in $format ${quality.isNotEmpty ? '($quality)' : ''} format...',
+                ),
               ),
             );
           },
