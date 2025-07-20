@@ -1,37 +1,25 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import '../../../domain/entities/video_info.dart';
 import '../../../domain/usecases/analyze_video.dart';
-import '../../../core/error/failures.dart';
-import 'video_analysis_state.dart';
+
+part 'video_analysis_state.dart';
 
 @injectable
 class VideoAnalysisCubit extends Cubit<VideoAnalysisState> {
-  final AnalyzeVideo _analyzeVideo;
+  final AnalyzeVideoUseCase _analyzeVideoUseCase;
 
-  VideoAnalysisCubit(this._analyzeVideo) : super(VideoAnalysisInitial());
+  VideoAnalysisCubit(this._analyzeVideoUseCase) : super(VideoAnalysisInitial());
 
   Future<void> analyzeVideo(String url) async {
     emit(VideoAnalysisLoading());
 
-    final result = await _analyzeVideo(url);
+    final result = await _analyzeVideoUseCase(url);
 
     result.fold(
-      (failure) {
-        String message;
-        if (failure is InvalidInputFailure) {
-          message = 'Invalid YouTube URL. Please check the URL and try again.';
-        } else if (failure is ServerFailure) {
-          message = 'Failed to analyze video. Please try again later.';
-        } else if (failure is VideoNotFoundFailure) {
-          message = 'Video not found or is private.';
-        } else {
-          message = 'An unexpected error occurred.';
-        }
-        emit(VideoAnalysisError(message: message));
-      },
-      (videoInfo) {
-        emit(VideoAnalysisLoaded(videoInfo: videoInfo));
-      },
+      (failure) => emit(VideoAnalysisError(failure.message)),
+      (videoInfo) => emit(VideoAnalysisSuccess(videoInfo)),
     );
   }
 

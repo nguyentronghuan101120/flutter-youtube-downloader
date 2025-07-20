@@ -1,22 +1,13 @@
+import 'package:dartz/dartz.dart';
 import '../entities/video_info.dart';
-import '../entities/playlist_info.dart';
+import '../../core/error/failures.dart';
 
 abstract class VideoRepository {
-  /// Phân tích video từ URL và trả về thông tin chi tiết
-  Future<VideoInfo> getVideoInfo(String url);
+  /// Analyzes a YouTube video URL and returns video information
+  ///
+  /// Returns [VideoInfo] on success, [Failure] on error
+  Future<Either<Failure, VideoInfo>> analyzeVideo(String url);
 
-  /// Phân tích playlist từ URL và trả về danh sách video
-  Future<PlaylistInfo> getPlaylistInfo(String url);
-
-  /// Lấy danh sách video từ playlist ID
-  Future<List<VideoInfo>> getPlaylistVideos(String playlistId);
-
-  /// Validate URL có phải là YouTube URL hợp lệ không
-  Future<bool> isValidYouTubeUrl(String url);
-
-  /// Trích xuất video ID từ URL
-  Future<String> extractVideoId(String url);
-
-  /// Trích xuất playlist ID từ URL
-  Future<String> extractPlaylistId(String url);
+  /// Validates if the provided URL is a valid YouTube URL
+  Future<Either<Failure, bool>> validateUrl(String url);
 }

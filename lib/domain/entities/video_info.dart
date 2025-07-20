@@ -56,6 +56,15 @@ class VideoInfo extends Equatable {
     isAgeRestricted,
     isRegionBlocked,
   ];
+
+  /// Validates if the provided URL is a valid YouTube URL
+  static bool isValidUrl(String url) {
+    final youtubeRegex = RegExp(
+      r'^(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+$',
+      caseSensitive: false,
+    );
+    return youtubeRegex.hasMatch(url);
+  }
 }
 
 class VideoStream extends Equatable {

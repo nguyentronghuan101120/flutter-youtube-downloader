@@ -1,28 +1,28 @@
+import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 import '../entities/video_info.dart';
 import '../repositories/video_repository.dart';
 import '../../core/error/failures.dart';
-import 'package:dartz/dartz.dart';
 
 @injectable
-class AnalyzeVideo {
+class AnalyzeVideoUseCase {
   final VideoRepository repository;
 
-  AnalyzeVideo(this.repository);
+  AnalyzeVideoUseCase(this.repository);
 
   Future<Either<Failure, VideoInfo>> call(String url) async {
-    try {
-      // Validate URL trước
-      final isValid = await repository.isValidYouTubeUrl(url);
-      if (!isValid) {
-        return const Left(InvalidInputFailure('Invalid YouTube URL'));
-      }
-
-      // Phân tích video
-      final videoInfo = await repository.getVideoInfo(url);
-      return Right(videoInfo);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
+    // Validate URL format first
+    if (!VideoInfo.isValidUrl(url)) {
+      return Left(InvalidInputFailure('Invalid YouTube URL format'));
     }
+
+    // Validate URL with repository
+    final validationResult = await repository.validateUrl(url);
+    return validationResult.fold((failure) => Left(failure), (isValid) {
+      if (!isValid) {
+        return Left(InvalidInputFailure('URL validation failed'));
+      }
+      return repository.analyzeVideo(url);
+    });
   }
 }

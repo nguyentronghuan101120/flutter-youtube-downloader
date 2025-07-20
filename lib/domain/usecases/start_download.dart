@@ -1,39 +1,48 @@
+import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
+import 'package:uuid/uuid.dart';
 import '../entities/download_task.dart';
 import '../repositories/download_repository.dart';
-import '../repositories/storage_repository.dart';
 import '../../core/error/failures.dart';
-import 'package:dartz/dartz.dart';
 
 @injectable
-class StartDownload {
-  final DownloadRepository downloadRepository;
-  final StorageRepository storageRepository;
+class StartDownloadUseCase {
+  final DownloadRepository repository;
+  final Uuid uuid;
 
-  StartDownload(this.downloadRepository, this.storageRepository);
+  StartDownloadUseCase(this.repository, this.uuid);
 
-  Future<Either<Failure, Stream<DownloadTask>>> call(DownloadTask task) async {
-    try {
-      // Kiểm tra quyền storage
-      final hasPermission = await storageRepository.hasStoragePermission();
-      if (!hasPermission) {
-        return const Left(PermissionFailure('Storage permission required'));
-      }
-
-      // Kiểm tra dung lượng trống
-      final hasSpace = await storageRepository.hasEnoughSpace(task.totalBytes);
-      if (!hasSpace) {
-        return const Left(StorageFailure('Insufficient storage space'));
-      }
-
-      // Tạo thư mục nếu cần
-      await storageRepository.createDirectory(task.destinationPath);
-
-      // Bắt đầu tải xuống
-      final downloadStream = downloadRepository.downloadVideo(task);
-      return Right(downloadStream);
-    } catch (e) {
-      return Left(DownloadFailure(e.toString()));
+  Future<Either<Failure, DownloadTask>> call({
+    required String videoId,
+    required String title,
+    required String formatId,
+    required String outputPath,
+  }) async {
+    // Validate parameters
+    if (videoId.isEmpty) {
+      return Left(InvalidInputFailure('Video ID cannot be empty'));
     }
+    if (title.isEmpty) {
+      return Left(InvalidInputFailure('Title cannot be empty'));
+    }
+    if (formatId.isEmpty) {
+      return Left(InvalidInputFailure('Format ID cannot be empty'));
+    }
+    if (outputPath.isEmpty) {
+      return Left(InvalidInputFailure('Output path cannot be empty'));
+    }
+
+    // Create download task
+    final task = DownloadTask(
+      id: uuid.v4(),
+      videoId: videoId,
+      title: title,
+      formatId: formatId,
+      outputPath: outputPath,
+      createdAt: DateTime.now(),
+    );
+
+    // Start download
+    return repository.startDownload(task);
   }
 }

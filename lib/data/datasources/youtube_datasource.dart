@@ -1,15 +1,10 @@
 import 'package:injectable/injectable.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../models/video_info_model.dart';
-import '../models/playlist_info_model.dart';
 
 abstract class YouTubeDataSource {
   Future<VideoInfoModel> getVideoInfo(String url);
-  Future<PlaylistInfoModel> getPlaylistInfo(String url);
-  Future<List<VideoInfoModel>> getPlaylistVideos(String playlistId);
-  Future<bool> isValidYouTubeUrl(String url);
-  Future<String> extractVideoId(String url);
-  Future<String> extractPlaylistId(String url);
+  Future<bool> validateUrl(String url);
 }
 
 @Injectable(as: YouTubeDataSource)
@@ -79,73 +74,12 @@ class YouTubeDataSourceImpl implements YouTubeDataSource {
   }
 
   @override
-  Future<PlaylistInfoModel> getPlaylistInfo(String url) async {
+  Future<bool> validateUrl(String url) async {
     try {
-      final playlist = await _youtubeExplode.playlists.get(url);
-      final videos = await _youtubeExplode.playlists
-          .getVideos(playlist.id)
-          .toList();
-
-      final videoModels = await Future.wait(
-        videos.map((video) => getVideoInfo(video.url)),
-      );
-
-      return PlaylistInfoModel(
-        id: playlist.id.value,
-        title: playlist.title,
-        description: playlist.description,
-        channelName: playlist.author,
-        channelId: '', // Default empty string
-        thumbnailUrl: playlist.thumbnails.highResUrl,
-        videoCount: videos.length,
-        videos: videoModels,
-        isPrivate: false, // Default value
-        isRegionBlocked: false,
-      );
-    } catch (e) {
-      throw Exception('Failed to get playlist info: $e');
-    }
-  }
-
-  @override
-  Future<List<VideoInfoModel>> getPlaylistVideos(String playlistId) async {
-    try {
-      final videos = await _youtubeExplode.playlists
-          .getVideos(playlistId)
-          .toList();
-      return await Future.wait(videos.map((video) => getVideoInfo(video.url)));
-    } catch (e) {
-      throw Exception('Failed to get playlist videos: $e');
-    }
-  }
-
-  @override
-  Future<bool> isValidYouTubeUrl(String url) async {
-    try {
-      final uri = Uri.parse(url);
-      return uri.host.contains('youtube.com') || uri.host.contains('youtu.be');
+      await _youtubeExplode.videos.get(url);
+      return true;
     } catch (e) {
       return false;
-    }
-  }
-
-  @override
-  Future<String> extractVideoId(String url) async {
-    try {
-      final video = await _youtubeExplode.videos.get(url);
-      return video.id.value;
-    } catch (e) {
-      throw Exception('Failed to extract video ID: $e');
-    }
-  }
-
-  @override
-  Future<String> extractPlaylistId(String url) async {
-    try {
-      final playlist = await _youtubeExplode.playlists.get(url);
-      return playlist.id.value;
-    } catch (e) {
-      throw Exception('Failed to extract playlist ID: $e');
     }
   }
 }

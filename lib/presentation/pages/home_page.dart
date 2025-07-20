@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../core/constants/app_constants.dart';
 import '../bloc/video_analysis/video_analysis_cubit.dart';
-import '../bloc/video_analysis/video_analysis_state.dart';
-import '../bloc/preferences/preferences_cubit.dart';
-import '../bloc/preferences/preferences_state.dart';
 import '../widgets/url_input_widget.dart';
-import '../widgets/video_info_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,13 +11,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  @override
-  void initState() {
-    super.initState();
-    // Load preferences khi app khởi động
-    context.read<PreferencesCubit>().loadPreferences();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,47 +23,9 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            BlocBuilder<PreferencesCubit, PreferencesState>(
-              builder: (context, preferencesState) {
-                if (preferencesState is PreferencesLoaded) {
-                  return UrlInputWidget(
-                    selectedDownloadType:
-                        preferencesState.preferences.downloadType,
-                    onDownloadTypeChanged: (downloadType) {
-                      context.read<PreferencesCubit>().updateDownloadType(
-                        downloadType,
-                      );
-                    },
-                    onFormatSelected: (format, quality) {
-                      context.read<PreferencesCubit>().updateSelectedFormat(
-                        format,
-                      );
-                      context.read<PreferencesCubit>().updateSelectedQuality(
-                        quality,
-                      );
-                    },
-                  );
-                } else if (preferencesState is PreferencesLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                } else {
-                  // Fallback với default values
-                  return UrlInputWidget(
-                    selectedDownloadType: DownloadType.videoOnly,
-                    onDownloadTypeChanged: (downloadType) {
-                      context.read<PreferencesCubit>().updateDownloadType(
-                        downloadType,
-                      );
-                    },
-                    onFormatSelected: (format, quality) {
-                      context.read<PreferencesCubit>().updateSelectedFormat(
-                        format,
-                      );
-                      context.read<PreferencesCubit>().updateSelectedQuality(
-                        quality,
-                      );
-                    },
-                  );
-                }
+            UrlInputWidget(
+              onUrlSubmitted: (url) {
+                context.read<VideoAnalysisCubit>().analyzeVideo(url);
               },
             ),
             const SizedBox(height: 20),
@@ -84,30 +34,8 @@ class _HomePageState extends State<HomePage> {
                 builder: (context, videoState) {
                   if (videoState is VideoAnalysisLoading) {
                     return const Center(child: CircularProgressIndicator());
-                  } else if (videoState is VideoAnalysisLoaded) {
-                    return BlocBuilder<PreferencesCubit, PreferencesState>(
-                      builder: (context, preferencesState) {
-                        if (preferencesState is PreferencesLoaded) {
-                          return VideoInfoWidget(
-                            videoInfo: videoState.videoInfo,
-                            downloadType:
-                                preferencesState.preferences.downloadType,
-                            selectedFormat:
-                                preferencesState.preferences.selectedFormat,
-                            selectedQuality:
-                                preferencesState.preferences.selectedQuality,
-                          );
-                        } else {
-                          // Fallback với default values
-                          return VideoInfoWidget(
-                            videoInfo: videoState.videoInfo,
-                            downloadType: DownloadType.videoOnly,
-                            selectedFormat: 'MP4',
-                            selectedQuality: '1080p',
-                          );
-                        }
-                      },
-                    );
+                  } else if (videoState is VideoAnalysisSuccess) {
+                    return _buildVideoInfoCard(videoState.videoInfo);
                   } else if (videoState is VideoAnalysisError) {
                     return Center(
                       child: Column(
@@ -153,5 +81,81 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  Widget _buildVideoInfoCard(videoInfo) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Thumbnail
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                videoInfo.thumbnailUrl,
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: double.infinity,
+                    height: 200,
+                    color: Colors.grey[300],
+                    child: const Icon(
+                      Icons.video_library,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Title
+            Text(
+              videoInfo.title,
+              style: Theme.of(context).textTheme.headlineSmall,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+
+            // Channel name
+            Text(
+              videoInfo.channelName,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+
+            // Duration
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDuration(videoInfo.duration),
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    String hours = twoDigits(duration.inHours);
+    String minutes = twoDigits(duration.inMinutes.remainder(60));
+    String seconds = twoDigits(duration.inSeconds.remainder(60));
+    return duration.inHours > 0
+        ? '$hours:$minutes:$seconds'
+        : '$minutes:$seconds';
   }
 }

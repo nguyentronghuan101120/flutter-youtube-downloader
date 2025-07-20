@@ -33,12 +33,8 @@ import 'package:flutter_youtube_downloader/domain/repositories/storage_repositor
     as _i244;
 import 'package:flutter_youtube_downloader/domain/repositories/video_repository.dart'
     as _i142;
-import 'package:flutter_youtube_downloader/domain/usecases/analyze_playlist.dart'
-    as _i526;
 import 'package:flutter_youtube_downloader/domain/usecases/analyze_video.dart'
     as _i311;
-import 'package:flutter_youtube_downloader/domain/usecases/get_downloads.dart'
-    as _i257;
 import 'package:flutter_youtube_downloader/domain/usecases/get_user_preferences.dart'
     as _i501;
 import 'package:flutter_youtube_downloader/domain/usecases/save_user_preferences.dart'
@@ -51,6 +47,7 @@ import 'package:flutter_youtube_downloader/presentation/bloc/video_analysis/vide
     as _i384;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
+import 'package:uuid/uuid.dart' as _i706;
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' as _i578;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -62,6 +59,7 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final externalModule = _$ExternalModule();
     gh.lazySingleton<_i578.YoutubeExplode>(() => externalModule.youtubeExplode);
+    gh.lazySingleton<_i706.Uuid>(() => externalModule.uuid);
     gh.factory<_i244.StorageRepository>(() => _i76.StorageRepositoryImpl());
     gh.factory<_i406.PreferencesDataSource>(
       () => _i69.PreferencesDataSourceImpl(),
@@ -73,32 +71,20 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i132.VideoRepositoryImpl(gh<_i446.YouTubeDataSource>()),
     );
     gh.factory<_i856.DownloadRepository>(() => _i888.DownloadRepositoryImpl());
-    gh.factory<_i767.StartDownload>(
-      () => _i767.StartDownload(
-        gh<_i856.DownloadRepository>(),
-        gh<_i244.StorageRepository>(),
-      ),
+    gh.factory<_i311.AnalyzeVideoUseCase>(
+      () => _i311.AnalyzeVideoUseCase(gh<_i142.VideoRepository>()),
     );
-    gh.factory<_i311.AnalyzeVideo>(
-      () => _i311.AnalyzeVideo(gh<_i142.VideoRepository>()),
-    );
-    gh.factory<_i526.AnalyzePlaylist>(
-      () => _i526.AnalyzePlaylist(gh<_i142.VideoRepository>()),
+    gh.factory<_i384.VideoAnalysisCubit>(
+      () => _i384.VideoAnalysisCubit(gh<_i311.AnalyzeVideoUseCase>()),
     );
     gh.factory<_i485.PreferencesRepository>(
       () => _i387.PreferencesRepositoryImpl(gh<_i406.PreferencesDataSource>()),
     );
-    gh.factory<_i384.VideoAnalysisCubit>(
-      () => _i384.VideoAnalysisCubit(gh<_i311.AnalyzeVideo>()),
-    );
-    gh.factory<_i257.GetActiveDownloads>(
-      () => _i257.GetActiveDownloads(gh<_i856.DownloadRepository>()),
-    );
-    gh.factory<_i257.GetCompletedDownloads>(
-      () => _i257.GetCompletedDownloads(gh<_i856.DownloadRepository>()),
-    );
-    gh.factory<_i257.GetQueuedDownloads>(
-      () => _i257.GetQueuedDownloads(gh<_i856.DownloadRepository>()),
+    gh.factory<_i767.StartDownloadUseCase>(
+      () => _i767.StartDownloadUseCase(
+        gh<_i856.DownloadRepository>(),
+        gh<_i706.Uuid>(),
+      ),
     );
     gh.factory<_i993.SaveUserPreferences>(
       () => _i993.SaveUserPreferences(gh<_i485.PreferencesRepository>()),
