@@ -1,12 +1,14 @@
+import 'package:injectable/injectable.dart';
 import '../entities/playlist_info.dart';
 import '../repositories/video_repository.dart';
 import '../../core/error/failures.dart';
 import 'package:dartz/dartz.dart';
 
+@injectable
 class AnalyzePlaylist {
   final VideoRepository repository;
 
-  AnalyzePlaylist({required this.repository});
+  AnalyzePlaylist(this.repository);
 
   Future<Either<Failure, PlaylistInfo>> call(String url) async {
     try {

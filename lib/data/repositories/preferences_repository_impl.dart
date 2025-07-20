@@ -1,12 +1,14 @@
+import 'package:injectable/injectable.dart';
 import '../../domain/entities/user_preferences.dart';
 import '../../domain/repositories/preferences_repository.dart';
 import '../../core/constants/app_constants.dart';
 import '../datasources/preferences_datasource.dart';
 
+@Injectable(as: PreferencesRepository)
 class PreferencesRepositoryImpl implements PreferencesRepository {
   final PreferencesDataSource dataSource;
 
-  PreferencesRepositoryImpl({required this.dataSource});
+  PreferencesRepositoryImpl(this.dataSource);
 
   @override
   Future<UserPreferences> getUserPreferences() async {

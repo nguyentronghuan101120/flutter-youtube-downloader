@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'core/dependency_injection/injection_container.dart' as di;
+import 'core/dependency_injection/injection.dart';
 import 'presentation/bloc/video_analysis/video_analysis_cubit.dart';
 import 'presentation/bloc/preferences/preferences_cubit.dart';
 import 'presentation/pages/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await di.init();
+  await configureDependencies();
   runApp(const MyApp());
 }
 
@@ -20,10 +20,10 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<VideoAnalysisCubit>(
-          create: (context) => di.sl<VideoAnalysisCubit>(),
+          create: (context) => getIt<VideoAnalysisCubit>(),
         ),
         BlocProvider<PreferencesCubit>(
-          create: (context) => di.sl<PreferencesCubit>(),
+          create: (context) => getIt<PreferencesCubit>(),
         ),
       ],
       child: MaterialApp(

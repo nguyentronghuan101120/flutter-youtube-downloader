@@ -1,12 +1,14 @@
+import 'package:injectable/injectable.dart';
 import '../entities/download_task.dart';
 import '../repositories/download_repository.dart';
 import '../../core/error/failures.dart';
 import 'package:dartz/dartz.dart';
 
+@injectable
 class GetActiveDownloads {
   final DownloadRepository repository;
 
-  GetActiveDownloads({required this.repository});
+  GetActiveDownloads(this.repository);
 
   Future<Either<Failure, List<DownloadTask>>> call() async {
     try {
@@ -18,10 +20,11 @@ class GetActiveDownloads {
   }
 }
 
+@injectable
 class GetCompletedDownloads {
   final DownloadRepository repository;
 
-  GetCompletedDownloads({required this.repository});
+  GetCompletedDownloads(this.repository);
 
   Future<Either<Failure, List<DownloadTask>>> call() async {
     try {
@@ -33,10 +36,11 @@ class GetCompletedDownloads {
   }
 }
 
+@injectable
 class GetQueuedDownloads {
   final DownloadRepository repository;
 
-  GetQueuedDownloads({required this.repository});
+  GetQueuedDownloads(this.repository);
 
   Future<Either<Failure, List<DownloadTask>>> call() async {
     try {

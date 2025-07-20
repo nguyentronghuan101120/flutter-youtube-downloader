@@ -1,12 +1,14 @@
+import 'package:injectable/injectable.dart';
 import '../../domain/entities/video_info.dart';
 import '../../domain/entities/playlist_info.dart';
 import '../../domain/repositories/video_repository.dart';
 import '../datasources/youtube_datasource.dart';
 
+@Injectable(as: VideoRepository)
 class VideoRepositoryImpl implements VideoRepository {
   final YouTubeDataSource dataSource;
 
-  VideoRepositoryImpl({required this.dataSource});
+  VideoRepositoryImpl(this.dataSource);
 
   @override
   Future<VideoInfo> getVideoInfo(String url) async {

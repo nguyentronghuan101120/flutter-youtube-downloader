@@ -1,14 +1,14 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 import '../../../domain/usecases/analyze_video.dart';
 import '../../../core/error/failures.dart';
 import 'video_analysis_state.dart';
 
+@injectable
 class VideoAnalysisCubit extends Cubit<VideoAnalysisState> {
   final AnalyzeVideo _analyzeVideo;
 
-  VideoAnalysisCubit({required AnalyzeVideo analyzeVideo})
-    : _analyzeVideo = analyzeVideo,
-      super(VideoAnalysisInitial());
+  VideoAnalysisCubit(this._analyzeVideo) : super(VideoAnalysisInitial());
 
   Future<void> analyzeVideo(String url) async {
     emit(VideoAnalysisLoading());

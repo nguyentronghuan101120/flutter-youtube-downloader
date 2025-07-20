@@ -1,20 +1,18 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 import '../../../domain/entities/user_preferences.dart';
 import '../../../domain/usecases/get_user_preferences.dart';
 import '../../../domain/usecases/save_user_preferences.dart';
 import '../../../core/constants/app_constants.dart';
 import 'preferences_state.dart';
 
+@injectable
 class PreferencesCubit extends Cubit<PreferencesState> {
   final GetUserPreferences _getUserPreferences;
   final SaveUserPreferences _saveUserPreferences;
 
-  PreferencesCubit({
-    required GetUserPreferences getUserPreferences,
-    required SaveUserPreferences saveUserPreferences,
-  }) : _getUserPreferences = getUserPreferences,
-       _saveUserPreferences = saveUserPreferences,
-       super(const PreferencesInitial());
+  PreferencesCubit(this._getUserPreferences, this._saveUserPreferences)
+    : super(const PreferencesInitial());
 
   Future<void> loadPreferences() async {
     emit(const PreferencesLoading());

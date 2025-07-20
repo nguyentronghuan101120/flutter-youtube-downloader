@@ -1,17 +1,16 @@
+import 'package:injectable/injectable.dart';
 import '../entities/download_task.dart';
 import '../repositories/download_repository.dart';
 import '../repositories/storage_repository.dart';
 import '../../core/error/failures.dart';
 import 'package:dartz/dartz.dart';
 
+@injectable
 class StartDownload {
   final DownloadRepository downloadRepository;
   final StorageRepository storageRepository;
 
-  StartDownload({
-    required this.downloadRepository,
-    required this.storageRepository,
-  });
+  StartDownload(this.downloadRepository, this.storageRepository);
 
   Future<Either<Failure, Stream<DownloadTask>>> call(DownloadTask task) async {
     try {

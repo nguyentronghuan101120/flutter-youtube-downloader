@@ -1,9 +1,11 @@
+import 'package:injectable/injectable.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/user_preferences.dart';
 import '../../core/constants/app_constants.dart';
 import '../models/user_preferences_model.dart';
 import 'preferences_datasource.dart';
 
+@Injectable(as: PreferencesDataSource)
 class PreferencesDataSourceImpl implements PreferencesDataSource {
   static const String _downloadTypeKey = 'download_type';
   static const String _selectedFormatKey = 'selected_format';

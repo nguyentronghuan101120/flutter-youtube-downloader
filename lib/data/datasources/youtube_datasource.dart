@@ -1,3 +1,4 @@
+import 'package:injectable/injectable.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../models/video_info_model.dart';
 import '../models/playlist_info_model.dart';
@@ -11,11 +12,11 @@ abstract class YouTubeDataSource {
   Future<String> extractPlaylistId(String url);
 }
 
+@Injectable(as: YouTubeDataSource)
 class YouTubeDataSourceImpl implements YouTubeDataSource {
   final YoutubeExplode _youtubeExplode;
 
-  YouTubeDataSourceImpl({YoutubeExplode? youtubeExplode})
-    : _youtubeExplode = youtubeExplode ?? YoutubeExplode();
+  YouTubeDataSourceImpl(this._youtubeExplode);
 
   @override
   Future<VideoInfoModel> getVideoInfo(String url) async {
