@@ -41,6 +41,10 @@ class VideoNotFoundFailure extends Failure {
   const VideoNotFoundFailure(super.message);
 }
 
+class VideoUnavailableFailure extends Failure {
+  const VideoUnavailableFailure(super.message);
+}
+
 class PlaylistNotFoundFailure extends Failure {
   const PlaylistNotFoundFailure(super.message);
 }

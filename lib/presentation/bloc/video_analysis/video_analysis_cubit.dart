@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import '../../../domain/entities/video_info.dart';
 import '../../../domain/usecases/analyze_video.dart';
+import '../../../core/constants/app_constants.dart';
 
 part 'video_analysis_state.dart';
 
@@ -13,13 +14,13 @@ class VideoAnalysisCubit extends Cubit<VideoAnalysisState> {
   VideoAnalysisCubit(this._analyzeVideoUseCase) : super(VideoAnalysisInitial());
 
   Future<void> analyzeVideo(String url) async {
-    emit(VideoAnalysisLoading());
+    emit(VideoAnalysisLoading(lastUrl: url));
 
     final result = await _analyzeVideoUseCase(url);
 
     result.fold(
-      (failure) => emit(VideoAnalysisError(failure.message)),
-      (videoInfo) => emit(VideoAnalysisSuccess(videoInfo)),
+      (failure) => emit(VideoAnalysisError(failure.message, lastUrl: url)),
+      (videoInfo) => emit(VideoAnalysisSuccess(videoInfo, lastUrl: url)),
     );
   }
 

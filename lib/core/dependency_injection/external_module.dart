@@ -1,6 +1,7 @@
 import 'package:injectable/injectable.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:uuid/uuid.dart';
+import 'package:dio/dio.dart';
 
 @module
 abstract class ExternalModule {
@@ -9,4 +10,7 @@ abstract class ExternalModule {
 
   @lazySingleton
   Uuid get uuid => const Uuid();
+
+  @lazySingleton
+  Dio get dio => Dio();
 }

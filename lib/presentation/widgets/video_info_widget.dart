@@ -7,6 +7,8 @@ class VideoInfoWidget extends StatelessWidget {
   final DownloadType downloadType;
   final String selectedFormat;
   final String selectedQuality;
+  final VoidCallback? onRetry;
+  final bool isLoading;
 
   const VideoInfoWidget({
     super.key,
@@ -14,10 +16,25 @@ class VideoInfoWidget extends StatelessWidget {
     required this.downloadType,
     required this.selectedFormat,
     required this.selectedQuality,
+    this.onRetry,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Analyzing video...'),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,7 +46,7 @@ class VideoInfoWidget extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Thumbnail
+                  // Thumbnail với error handling
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
@@ -37,15 +54,44 @@ class VideoInfoWidget extends StatelessWidget {
                       width: double.infinity,
                       height: 200,
                       fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: double.infinity,
+                          height: 200,
+                          color: Colors.grey[200],
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           width: double.infinity,
                           height: 200,
                           color: Colors.grey[300],
-                          child: const Icon(
-                            Icons.video_library,
-                            size: 64,
-                            color: Colors.grey,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.video_library,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Thumbnail unavailable',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -53,46 +99,79 @@ class VideoInfoWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // Title
+                  // Title với better overflow handling
                   Text(
                     videoInfo.title,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    maxLines: 2,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
 
-                  // Channel name
-                  Text(
-                    videoInfo.channelName,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Duration và view count
+                  // Channel name với link style
                   Row(
                     children: [
                       Icon(
-                        Icons.access_time,
+                        Icons.account_circle,
                         size: 16,
                         color: Colors.grey[600],
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        _formatDuration(videoInfo.duration),
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.visibility, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatViewCount(videoInfo.viewCount),
-                        style: TextStyle(color: Colors.grey[600]),
+                      Expanded(
+                        child: Text(
+                          videoInfo.channelName,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+
+                  // Enhanced metadata row
+                  _buildMetadataRow(context),
+
+                  // Upload date if available
+                  if (videoInfo.uploadDate != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Uploaded: ${_formatUploadDate(videoInfo.uploadDate!)}',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ],
+
+                  // Like count if available
+                  if (videoInfo.likeCount != null &&
+                      videoInfo.likeCount! > 0) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.thumb_up, size: 16, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatLikeCount(videoInfo.likeCount!),
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -111,51 +190,101 @@ class VideoInfoWidget extends StatelessWidget {
 
           // Thông báo khi không có stream phù hợp
           if (_getMatchingStreams().isEmpty) ...[
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Colors.orange[700],
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            downloadType == DownloadType.audioOnly
-                                ? 'No ${selectedFormat.toLowerCase()} audio streams available'
-                                : 'No ${selectedFormat.toLowerCase()} video streams available with $selectedQuality quality',
-                            style: TextStyle(
-                              color: Colors.orange[700],
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Available alternatives:',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildAvailableAlternatives(context),
-                  ],
+            _buildNoStreamsWarning(context),
+          ],
+
+          // Retry button if onRetry is provided
+          if (onRetry != null) ...[
+            const SizedBox(height: 16),
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry Analysis'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
                 ),
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildMetadataRow(BuildContext context) {
+    return Row(
+      children: [
+        // Duration
+        Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+        const SizedBox(width: 4),
+        Text(
+          _formatDuration(videoInfo.duration),
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 16),
+
+        // View count
+        Icon(Icons.visibility, size: 16, color: Colors.grey[600]),
+        const SizedBox(width: 4),
+        Text(
+          _formatViewCount(videoInfo.viewCount),
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNoStreamsWarning(BuildContext context) {
+    return Card(
+      color: Colors.orange[50],
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange[700],
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    downloadType == DownloadType.audioOnly
+                        ? 'No ${selectedFormat.toLowerCase()} audio streams available'
+                        : 'No ${selectedFormat.toLowerCase()} video streams available with $selectedQuality quality',
+                    style: TextStyle(
+                      color: Colors.orange[700],
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Available alternatives:',
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildAvailableAlternatives(context),
+          ],
+        ),
       ),
     );
   }
@@ -396,6 +525,25 @@ class VideoInfoWidget extends StatelessWidget {
       return '${(bytes / 1024).toStringAsFixed(1)} KB';
     } else {
       return '$bytes B';
+    }
+  }
+
+  String _formatUploadDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString; // Return original string if parsing fails
+    }
+  }
+
+  String _formatLikeCount(int count) {
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M likes';
+    } else if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K likes';
+    } else {
+      return '$count likes';
     }
   }
 }

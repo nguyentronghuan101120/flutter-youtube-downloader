@@ -5,25 +5,33 @@ class PlaylistInfo extends Equatable {
   final String id;
   final String title;
   final String description;
-  final String channelName;
-  final String channelId;
-  final String thumbnailUrl;
+  final String author;
+  final String authorId;
   final int videoCount;
   final List<VideoInfo> videos;
+  final String? thumbnailUrl;
   final bool isPrivate;
-  final bool isRegionBlocked;
+  final bool isUnlisted;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final String? nextPageToken;
+  final bool hasMoreVideos;
 
   const PlaylistInfo({
     required this.id,
     required this.title,
     required this.description,
-    required this.channelName,
-    required this.channelId,
-    required this.thumbnailUrl,
+    required this.author,
+    required this.authorId,
     required this.videoCount,
     required this.videos,
+    this.thumbnailUrl,
     this.isPrivate = false,
-    this.isRegionBlocked = false,
+    this.isUnlisted = false,
+    this.createdAt,
+    this.updatedAt,
+    this.nextPageToken,
+    this.hasMoreVideos = false,
   });
 
   @override
@@ -31,12 +39,16 @@ class PlaylistInfo extends Equatable {
     id,
     title,
     description,
-    channelName,
-    channelId,
-    thumbnailUrl,
+    author,
+    authorId,
     videoCount,
     videos,
+    thumbnailUrl,
     isPrivate,
-    isRegionBlocked,
+    isUnlisted,
+    createdAt,
+    updatedAt,
+    nextPageToken,
+    hasMoreVideos,
   ];
 }
