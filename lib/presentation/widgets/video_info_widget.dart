@@ -96,7 +96,9 @@ class VideoInfoWidget extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _formatUploadDate(videoInfo.uploadDate),
+                        videoInfo.uploadDate != null
+                            ? _formatUploadDate(videoInfo.uploadDate!)
+                            : 'Unknown date',
                         style: TextStyle(color: Colors.grey[600]),
                       ),
                     ],

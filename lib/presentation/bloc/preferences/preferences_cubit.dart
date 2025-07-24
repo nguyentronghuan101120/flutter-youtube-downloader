@@ -4,6 +4,7 @@ import '../../../domain/entities/user_preferences.dart';
 import '../../../domain/usecases/get_user_preferences.dart';
 import '../../../domain/usecases/save_user_preferences.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/result/result.dart';
 import 'preferences_state.dart';
 
 @injectable
@@ -17,8 +18,12 @@ class PreferencesCubit extends Cubit<PreferencesState> {
   Future<void> loadPreferences() async {
     emit(const PreferencesLoading());
     try {
-      final preferences = await _getUserPreferences();
-      emit(PreferencesLoaded(preferences: preferences));
+      final result = await _getUserPreferences.execute(null);
+      if (result.isSuccess) {
+        emit(PreferencesLoaded(preferences: result.data!));
+      } else {
+        emit(PreferencesError(message: result.errorMessage!));
+      }
     } catch (e) {
       emit(PreferencesError(message: e.toString()));
     }
@@ -26,8 +31,12 @@ class PreferencesCubit extends Cubit<PreferencesState> {
 
   Future<void> savePreferences(UserPreferences preferences) async {
     try {
-      await _saveUserPreferences(preferences);
-      emit(PreferencesLoaded(preferences: preferences));
+      final result = await _saveUserPreferences.execute(preferences);
+      if (result.isSuccess) {
+        emit(PreferencesLoaded(preferences: preferences));
+      } else {
+        emit(PreferencesError(message: result.errorMessage!));
+      }
     } catch (e) {
       emit(PreferencesError(message: e.toString()));
     }

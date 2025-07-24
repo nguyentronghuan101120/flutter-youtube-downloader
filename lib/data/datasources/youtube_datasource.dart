@@ -36,6 +36,7 @@ class YouTubeDataSource {
         author: video.author,
         duration: video.duration ?? Duration.zero,
         thumbnailUrl: _getBestThumbnailUrl(videoId),
+        formats: [], // TODO: Implement formats extraction
         description: video.description,
         uploadDate: video.uploadDate ?? DateTime.now(),
         viewCount: video.engagement.viewCount,

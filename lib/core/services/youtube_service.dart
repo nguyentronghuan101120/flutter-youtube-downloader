@@ -36,11 +36,7 @@ class YouTubeService {
           author: video.author,
           duration: video.duration ?? Duration.zero,
           thumbnailUrl: _getBestThumbnailUrl(videoId),
-          description: video.description,
-          uploadDate: video.uploadDate ?? DateTime.now(),
-          viewCount: video.engagement.viewCount,
-          tags: video.keywords.toList(),
-          url: url,
+          formats: [], // Empty formats list for now
         );
       } catch (e) {
         if (attempt == _maxRetries) {

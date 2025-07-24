@@ -1,6 +1,7 @@
-import 'package:injectable/injectable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 import '../../../domain/usecases/analyze_video.dart';
+import '../../../core/result/result.dart';
 import 'video_analysis_state.dart';
 
 @injectable
@@ -19,36 +20,26 @@ class VideoAnalysisCubit extends Cubit<VideoAnalysisState> {
       // Emit loading state
       emit(VideoAnalysisState.loading(lastAnalyzedUrl: url));
 
-      // Validate URL first
-      if (!_analyzeVideoUseCase.isValidVideoUrl(url)) {
-        emit(
-          VideoAnalysisState.error(
-            errorMessage: 'Invalid YouTube video URL format',
-            lastAnalyzedUrl: url,
-          ),
-        );
-        return;
-      }
-
-      // Extract video ID for additional validation
-      final videoId = _analyzeVideoUseCase.extractVideoId(url);
-      if (videoId == null) {
-        emit(
-          VideoAnalysisState.error(
-            errorMessage: 'Could not extract video ID from URL',
-            lastAnalyzedUrl: url,
-          ),
-        );
-        return;
-      }
-
       // Analyze video using use case
-      final videoInfo = await _analyzeVideoUseCase.execute(url);
+      final result = await _analyzeVideoUseCase.execute(url);
 
-      // Emit success state
-      emit(
-        VideoAnalysisState.success(videoInfo: videoInfo, lastAnalyzedUrl: url),
-      );
+      if (result.isSuccess) {
+        // Emit success state
+        emit(
+          VideoAnalysisState.success(
+            videoInfo: result.data!,
+            lastAnalyzedUrl: url,
+          ),
+        );
+      } else {
+        // Emit error state
+        emit(
+          VideoAnalysisState.error(
+            errorMessage: result.errorMessage!,
+            lastAnalyzedUrl: url,
+          ),
+        );
+      }
     } catch (e) {
       // Emit error state
       emit(
@@ -58,22 +49,6 @@ class VideoAnalysisCubit extends Cubit<VideoAnalysisState> {
         ),
       );
     }
-  }
-
-  /// Validates a URL without analyzing
-  ///
-  /// [url] - The URL to validate
-  /// Returns true if URL is valid, false otherwise
-  bool validateUrl(String url) {
-    return _analyzeVideoUseCase.isValidVideoUrl(url);
-  }
-
-  /// Extracts video ID from URL
-  ///
-  /// [url] - The URL to extract ID from
-  /// Returns video ID if found, null otherwise
-  String? extractVideoId(String url) {
-    return _analyzeVideoUseCase.extractVideoId(url);
   }
 
   /// Resets the state to initial
