@@ -1,29 +1,17 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../core/constants/app_constants.dart';
 
-class UserPreferences extends Equatable {
-  final DownloadType downloadType;
-  final String selectedFormat;
-  final String selectedQuality;
+part 'user_preferences.freezed.dart';
+part 'user_preferences.g.dart';
 
-  const UserPreferences({
-    required this.downloadType,
-    required this.selectedFormat,
-    required this.selectedQuality,
-  });
+@freezed
+class UserPreferences with _$UserPreferences {
+  const factory UserPreferences({
+    required DownloadType downloadType,
+    required String selectedFormat,
+    required String selectedQuality,
+  }) = _UserPreferences;
 
-  @override
-  List<Object?> get props => [downloadType, selectedFormat, selectedQuality];
-
-  UserPreferences copyWith({
-    DownloadType? downloadType,
-    String? selectedFormat,
-    String? selectedQuality,
-  }) {
-    return UserPreferences(
-      downloadType: downloadType ?? this.downloadType,
-      selectedFormat: selectedFormat ?? this.selectedFormat,
-      selectedQuality: selectedQuality ?? this.selectedQuality,
-    );
-  }
+  factory UserPreferences.fromJson(Map<String, dynamic> json) =>
+      _$UserPreferencesFromJson(json);
 }

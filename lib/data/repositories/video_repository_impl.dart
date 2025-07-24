@@ -1,66 +1,58 @@
 import 'package:injectable/injectable.dart';
 import '../../domain/entities/video_info.dart';
-import '../../domain/entities/playlist_info.dart';
 import '../../domain/repositories/video_repository.dart';
 import '../datasources/youtube_datasource.dart';
+import '../../core/services/youtube_service.dart';
 
-@Injectable(as: VideoRepository)
+@LazySingleton(as: VideoRepository)
 class VideoRepositoryImpl implements VideoRepository {
-  final YouTubeDataSource dataSource;
+  final YouTubeDataSource _dataSource;
+  final YouTubeService _youtubeService;
 
-  VideoRepositoryImpl(this.dataSource);
+  VideoRepositoryImpl({
+    required YouTubeDataSource dataSource,
+    required YouTubeService youtubeService,
+  }) : _dataSource = dataSource,
+       _youtubeService = youtubeService;
 
   @override
-  Future<VideoInfo> getVideoInfo(String url) async {
+  Future<VideoInfo> analyzeVideo(String url) async {
     try {
-      return await dataSource.getVideoInfo(url);
+      // Use YouTube service for enhanced functionality with retry mechanism
+      return await _youtubeService.analyzeVideo(url);
     } catch (e) {
-      throw Exception('Failed to get video info: $e');
+      throw Exception('Failed to analyze video: $e');
     }
   }
 
   @override
-  Future<PlaylistInfo> getPlaylistInfo(String url) async {
+  Future<List<VideoInfo>> analyzePlaylist(String playlistUrl) async {
     try {
-      return await dataSource.getPlaylistInfo(url);
+      // Use YouTube service for enhanced playlist analysis with batch processing
+      final playlistInfo = await _youtubeService.analyzePlaylist(playlistUrl);
+      return playlistInfo.videos;
     } catch (e) {
-      throw Exception('Failed to get playlist info: $e');
+      throw Exception('Failed to analyze playlist: $e');
     }
   }
 
   @override
-  Future<List<VideoInfo>> getPlaylistVideos(String playlistId) async {
-    try {
-      return await dataSource.getPlaylistVideos(playlistId);
-    } catch (e) {
-      throw Exception('Failed to get playlist videos: $e');
-    }
+  bool isValidVideoUrl(String url) {
+    return _dataSource.isValidVideoUrl(url);
   }
 
   @override
-  Future<bool> isValidYouTubeUrl(String url) async {
-    try {
-      return await dataSource.isValidYouTubeUrl(url);
-    } catch (e) {
-      return false;
-    }
+  bool isValidPlaylistUrl(String url) {
+    return _dataSource.isValidPlaylistUrl(url);
   }
 
   @override
-  Future<String> extractVideoId(String url) async {
-    try {
-      return await dataSource.extractVideoId(url);
-    } catch (e) {
-      throw Exception('Failed to extract video ID: $e');
-    }
+  String? extractVideoId(String url) {
+    return _dataSource.extractVideoId(url);
   }
 
   @override
-  Future<String> extractPlaylistId(String url) async {
-    try {
-      return await dataSource.extractPlaylistId(url);
-    } catch (e) {
-      throw Exception('Failed to extract playlist ID: $e');
-    }
+  String? extractPlaylistId(String url) {
+    return _dataSource.extractPlaylistId(url);
   }
 }

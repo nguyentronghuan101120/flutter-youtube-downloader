@@ -1,22 +1,41 @@
 import '../entities/video_info.dart';
-import '../entities/playlist_info.dart';
 
 abstract class VideoRepository {
-  /// Phân tích video từ URL và trả về thông tin chi tiết
-  Future<VideoInfo> getVideoInfo(String url);
+  /// Analyzes a YouTube video URL and returns video information
+  ///
+  /// [url] - The YouTube video URL to analyze
+  /// Returns [VideoInfo] with complete metadata
+  /// Throws [Exception] if URL is invalid or network fails
+  Future<VideoInfo> analyzeVideo(String url);
 
-  /// Phân tích playlist từ URL và trả về danh sách video
-  Future<PlaylistInfo> getPlaylistInfo(String url);
+  /// Analyzes multiple videos from a playlist URL
+  ///
+  /// [playlistUrl] - The YouTube playlist URL
+  /// Returns list of [VideoInfo] for all videos in playlist
+  /// Throws [Exception] if URL is invalid or network fails
+  Future<List<VideoInfo>> analyzePlaylist(String playlistUrl);
 
-  /// Lấy danh sách video từ playlist ID
-  Future<List<VideoInfo>> getPlaylistVideos(String playlistId);
+  /// Checks if a URL is a valid YouTube video URL
+  ///
+  /// [url] - The URL to validate
+  /// Returns true if URL is valid, false otherwise
+  bool isValidVideoUrl(String url);
 
-  /// Validate URL có phải là YouTube URL hợp lệ không
-  Future<bool> isValidYouTubeUrl(String url);
+  /// Checks if a URL is a valid YouTube playlist URL
+  ///
+  /// [url] - The URL to validate
+  /// Returns true if URL is valid, false otherwise
+  bool isValidPlaylistUrl(String url);
 
-  /// Trích xuất video ID từ URL
-  Future<String> extractVideoId(String url);
+  /// Extracts video ID from YouTube URL
+  ///
+  /// [url] - The YouTube URL
+  /// Returns video ID if found, null otherwise
+  String? extractVideoId(String url);
 
-  /// Trích xuất playlist ID từ URL
-  Future<String> extractPlaylistId(String url);
+  /// Extracts playlist ID from YouTube URL
+  ///
+  /// [url] - The YouTube playlist URL
+  /// Returns playlist ID if found, null otherwise
+  String? extractPlaylistId(String url);
 }

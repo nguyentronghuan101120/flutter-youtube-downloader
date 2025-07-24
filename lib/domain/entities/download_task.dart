@@ -1,112 +1,131 @@
-import 'package:equatable/equatable.dart';
-import 'video_info.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'download_task.freezed.dart';
+part 'download_task.g.dart';
 
 enum DownloadStatus {
-  queued,
-  initializing,
+  pending,
   downloading,
   paused,
-  converting,
   completed,
   failed,
   cancelled,
 }
 
-enum DownloadType { video, audio, subtitle }
-
-class DownloadTask extends Equatable {
-  final String id;
-  final VideoInfo videoInfo;
-  final DownloadType type;
-  final String selectedFormat;
-  final String selectedQuality;
-  final String destinationPath;
-  final DownloadStatus status;
-  final double progress;
-  final int downloadedBytes;
-  final int totalBytes;
-  final double downloadSpeed;
-  final int estimatedTimeRemaining;
-  final String? errorMessage;
-  final DateTime createdAt;
-  final DateTime? startedAt;
-  final DateTime? completedAt;
-
-  const DownloadTask({
-    required this.id,
-    required this.videoInfo,
-    required this.type,
-    required this.selectedFormat,
-    required this.selectedQuality,
-    required this.destinationPath,
-    this.status = DownloadStatus.queued,
-    this.progress = 0.0,
-    this.downloadedBytes = 0,
-    this.totalBytes = 0,
-    this.downloadSpeed = 0.0,
-    this.estimatedTimeRemaining = 0,
-    this.errorMessage,
-    required this.createdAt,
-    this.startedAt,
-    this.completedAt,
-  });
-
-  DownloadTask copyWith({
-    String? id,
-    VideoInfo? videoInfo,
-    DownloadType? type,
-    String? selectedFormat,
-    String? selectedQuality,
-    String? destinationPath,
-    DownloadStatus? status,
-    double? progress,
-    int? downloadedBytes,
-    int? totalBytes,
-    double? downloadSpeed,
-    int? estimatedTimeRemaining,
-    String? errorMessage,
-    DateTime? createdAt,
+@freezed
+class DownloadTask with _$DownloadTask {
+  const factory DownloadTask({
+    required String id,
+    required String videoId,
+    required String title,
+    required String url,
+    required String format,
+    required String quality,
+    required String outputPath,
+    required DownloadStatus status,
+    required int bytesDownloaded,
+    required int totalBytes,
+    required double progress,
+    required DateTime createdAt,
     DateTime? startedAt,
     DateTime? completedAt,
-  }) {
-    return DownloadTask(
-      id: id ?? this.id,
-      videoInfo: videoInfo ?? this.videoInfo,
-      type: type ?? this.type,
-      selectedFormat: selectedFormat ?? this.selectedFormat,
-      selectedQuality: selectedQuality ?? this.selectedQuality,
-      destinationPath: destinationPath ?? this.destinationPath,
-      status: status ?? this.status,
-      progress: progress ?? this.progress,
-      downloadedBytes: downloadedBytes ?? this.downloadedBytes,
-      totalBytes: totalBytes ?? this.totalBytes,
-      downloadSpeed: downloadSpeed ?? this.downloadSpeed,
-      estimatedTimeRemaining:
-          estimatedTimeRemaining ?? this.estimatedTimeRemaining,
-      errorMessage: errorMessage ?? this.errorMessage,
-      createdAt: createdAt ?? this.createdAt,
-      startedAt: startedAt ?? this.startedAt,
-      completedAt: completedAt ?? this.completedAt,
+    String? errorMessage,
+    @Default(0) int retryCount,
+    @Default(true) bool isResumable,
+  }) = _DownloadTask;
+
+  factory DownloadTask.fromJson(Map<String, dynamic> json) =>
+      _$DownloadTaskFromJson(json);
+}
+
+// Extension để giữ lại các helper methods
+extension DownloadTaskUtils on DownloadTask {
+  /// Updates progress based on bytes downloaded
+  DownloadTask updateProgress(int bytesDownloaded, int totalBytes) {
+    final progress = totalBytes > 0 ? bytesDownloaded / totalBytes : 0.0;
+    return copyWith(
+      bytesDownloaded: bytesDownloaded,
+      totalBytes: totalBytes,
+      progress: progress,
     );
   }
 
-  @override
-  List<Object?> get props => [
-    id,
-    videoInfo,
-    type,
-    selectedFormat,
-    selectedQuality,
-    destinationPath,
-    status,
-    progress,
-    downloadedBytes,
-    totalBytes,
-    downloadSpeed,
-    estimatedTimeRemaining,
-    errorMessage,
-    createdAt,
-    startedAt,
-    completedAt,
-  ];
+  /// Updates status and related timestamps
+  DownloadTask updateStatus(DownloadStatus newStatus) {
+    DateTime? startedAt = this.startedAt;
+    DateTime? completedAt = this.completedAt;
+
+    switch (newStatus) {
+      case DownloadStatus.downloading:
+        startedAt = startedAt ?? DateTime.now();
+        break;
+      case DownloadStatus.completed:
+        completedAt = DateTime.now();
+        break;
+      default:
+        break;
+    }
+
+    return copyWith(
+      status: newStatus,
+      startedAt: startedAt,
+      completedAt: completedAt,
+    );
+  }
+
+  /// Increments retry count
+  DownloadTask incrementRetryCount() {
+    return copyWith(retryCount: retryCount + 1);
+  }
+
+  /// Sets error message
+  DownloadTask setError(String errorMessage) {
+    return copyWith(status: DownloadStatus.failed, errorMessage: errorMessage);
+  }
+
+  /// Checks if download is in progress
+  bool get isInProgress => status == DownloadStatus.downloading;
+
+  /// Checks if download is completed
+  bool get isCompleted => status == DownloadStatus.completed;
+
+  /// Checks if download failed
+  bool get isFailed => status == DownloadStatus.failed;
+
+  /// Checks if download can be resumed
+  bool get canResume =>
+      isResumable &&
+      (status == DownloadStatus.paused || status == DownloadStatus.failed);
+
+  /// Gets formatted file size
+  String get formattedFileSize {
+    if (totalBytes == 0) return 'Unknown size';
+
+    const units = ['B', 'KB', 'MB', 'GB'];
+    double size = totalBytes.toDouble();
+    int unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    return '${size.toStringAsFixed(1)} ${units[unitIndex]}';
+  }
+
+  /// Gets formatted downloaded size
+  String get formattedDownloadedSize {
+    if (bytesDownloaded == 0) return '0 B';
+
+    const units = ['B', 'KB', 'MB', 'GB'];
+    double size = bytesDownloaded.toDouble();
+    int unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    return '${size.toStringAsFixed(1)} ${units[unitIndex]}';
+  }
 }

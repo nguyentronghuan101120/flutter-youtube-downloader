@@ -1,49 +1,27 @@
 import '../../domain/entities/playlist_info.dart';
-import 'video_info_model.dart';
 
-class PlaylistInfoModel extends PlaylistInfo {
-  const PlaylistInfoModel({
-    required super.id,
-    required super.title,
-    required super.description,
-    required super.channelName,
-    required super.channelId,
-    required super.thumbnailUrl,
-    required super.videoCount,
-    required super.videos,
-    super.isPrivate,
-    super.isRegionBlocked,
-  });
+// PlaylistInfoModel giờ chỉ là alias cho PlaylistInfo vì entity đã có freezed
+typedef PlaylistInfoModel = PlaylistInfo;
 
-  factory PlaylistInfoModel.fromMap(Map<String, dynamic> map) {
-    return PlaylistInfoModel(
-      id: map['id'] ?? '',
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
-      channelName: map['channelName'] ?? '',
-      channelId: map['channelId'] ?? '',
-      thumbnailUrl: map['thumbnailUrl'] ?? '',
-      videoCount: map['videoCount'] ?? 0,
-      videos: List<VideoInfoModel>.from(
-        map['videos']?.map((x) => VideoInfoModel.fromMap(x)) ?? [],
-      ),
-      isPrivate: map['isPrivate'] ?? false,
-      isRegionBlocked: map['isRegionBlocked'] ?? false,
-    );
+// Extension để thêm các helper methods cho PlaylistInfoModel
+extension PlaylistInfoModelUtils on PlaylistInfoModel {
+  /// Creates PlaylistInfoModel from JSON map
+  static PlaylistInfoModel fromMap(Map<String, dynamic> map) {
+    return PlaylistInfoModel.fromJson(map);
   }
 
+  /// Converts PlaylistInfoModel to JSON map
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'title': title,
-      'description': description,
-      'channelName': channelName,
-      'channelId': channelId,
-      'thumbnailUrl': thumbnailUrl,
-      'videoCount': videoCount,
-      'videos': videos.map((x) => (x as VideoInfoModel).toMap()).toList(),
-      'isPrivate': isPrivate,
-      'isRegionBlocked': isRegionBlocked,
-    };
+    return toJson();
+  }
+
+  /// Creates PlaylistInfoModel from PlaylistInfo entity
+  static PlaylistInfoModel fromEntity(PlaylistInfo entity) {
+    return entity;
+  }
+
+  /// Converts PlaylistInfoModel to PlaylistInfo entity
+  PlaylistInfo toEntity() {
+    return this;
   }
 }

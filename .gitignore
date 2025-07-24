@@ -33,6 +33,14 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Generated files
+*.freezed.dart
+*.g.dart
+*.config.dart
+*.mocks.dart
+# Dependency injection generated files
+lib/core/dependency_injection/injection.config.dart
+
 # Symbolication related
 app.*.symbols
 

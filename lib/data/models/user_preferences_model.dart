@@ -1,37 +1,27 @@
 import '../../domain/entities/user_preferences.dart';
-import '../../core/constants/app_constants.dart';
 
-class UserPreferencesModel extends UserPreferences {
-  const UserPreferencesModel({
-    required super.downloadType,
-    required super.selectedFormat,
-    required super.selectedQuality,
-  });
+// UserPreferencesModel giờ chỉ là alias cho UserPreferences vì entity đã có freezed
+typedef UserPreferencesModel = UserPreferences;
 
-  factory UserPreferencesModel.fromMap(Map<String, dynamic> map) {
-    return UserPreferencesModel(
-      downloadType: DownloadType.values.firstWhere(
-        (type) => type.name == map['downloadType'],
-        orElse: () => DownloadType.videoOnly,
-      ),
-      selectedFormat: map['selectedFormat'] ?? 'MP4',
-      selectedQuality: map['selectedQuality'] ?? '1080p',
-    );
+// Extension để thêm các helper methods cho UserPreferencesModel
+extension UserPreferencesModelUtils on UserPreferencesModel {
+  /// Creates UserPreferencesModel from JSON map
+  static UserPreferencesModel fromMap(Map<String, dynamic> map) {
+    return UserPreferencesModel.fromJson(map);
   }
 
+  /// Converts UserPreferencesModel to JSON map
   Map<String, dynamic> toMap() {
-    return {
-      'downloadType': downloadType.name,
-      'selectedFormat': selectedFormat,
-      'selectedQuality': selectedQuality,
-    };
+    return toJson();
   }
 
-  factory UserPreferencesModel.defaultPreferences() {
-    return const UserPreferencesModel(
-      downloadType: DownloadType.videoOnly,
-      selectedFormat: 'MP4',
-      selectedQuality: '1080p',
-    );
+  /// Creates UserPreferencesModel from UserPreferences entity
+  static UserPreferencesModel fromEntity(UserPreferences entity) {
+    return entity;
+  }
+
+  /// Converts UserPreferencesModel to UserPreferences entity
+  UserPreferences toEntity() {
+    return this;
   }
 }

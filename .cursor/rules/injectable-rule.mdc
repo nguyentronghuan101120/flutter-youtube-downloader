@@ -1,0 +1,88 @@
+---
+alwaysApply: true
+---
+
+---
+
+## alwaysApply: true
+
+# Injectable Rule for Flutter Clean Architecture Projects
+
+## Mục tiêu
+
+Định nghĩa nguyên tắc sử dụng annotation của `injectable` trong dự án Flutter áp dụng Clean Architecture. Hướng dẫn AI tự động xác định chính xác nơi cần áp dụng `@injectable`, `@LazySingleton`, `@Singleton` hoặc `@factoryMethod` để phục vụ cho việc tạo và quản lý dependency thông qua GetIt.
+
+## Nguyên tắc áp dụng annotation
+
+### 1. Use Case (`lib/domain/usecases/`)
+
+- Annotation: `@injectable` hoặc `@lazySingleton`
+
+- Mô tả: Các lớp use case chứa logic nghiệp vụ cần inject vào Cubit hoặc Bloc. Nếu không giữ state, nên dùng `@lazySingleton` để tái sử dụng instance.
+
+### 2. Repository Implementation (`lib/data/repositories/`)
+
+- Annotation: `@LazySingleton(as: XxxRepository)`
+
+- Mô tả: Các lớp implement interface của domain repository. Cần annotate để ánh xạ rõ ràng giữa interface và implementation trong DI container.
+
+### 3. Data Source (`lib/data/datasources/`)
+
+- Annotation: `@lazySingleton`
+
+- Mô tả: Là nguồn dữ liệu cấp thấp, thường được truyền vào repository implementation. Không cần tạo mới mỗi lần nên dùng singleton dạng lazy.
+
+### 4. Bloc hoặc Cubit (`lib/presentation/bloc/`)
+
+- Annotation: `@injectable`
+
+- Mô tả: Nếu khởi tạo Bloc/Cubit thông qua GetIt (thay vì thủ công), cần annotate để hệ thống DI tạo instance phù hợp.
+
+## Không áp dụng annotation
+
+### 1. Entity (`lib/domain/entities/`)
+
+- Mô tả: Là các lớp dữ liệu thuần, không chứa logic nghiệp vụ hoặc phụ thuộc, không nên inject.
+
+### 2. Model (`lib/data/models/`)
+
+- Mô tả: Là các lớp phục vụ chuyển đổi dữ liệu, tương tự entity, không cần DI.
+
+### 3. Constant (`lib/core/constants/`)
+
+- Mô tả: Các hằng số có thể sử dụng qua static field hoặc constant class, không cần quản lý bằng DI.
+
+### 4. Widget và Page (`lib/presentation/widgets/`, `lib/presentation/pages/`)
+
+- Mô tả: UI component thường nhận dependency qua constructor hoặc Provider. Không nên inject trực tiếp bằng GetIt để tránh làm rối luồng dữ liệu.
+
+## Cấu hình bổ sung
+
+### File `injection_container.dart`
+
+```dart
+import  'package:get_it/get_it.dart';
+import  'package:injectable/injectable.dart';
+import  'injection_container.config.dart';
+
+final getIt = GetIt.instance;
+
+@InjectableInit()
+Future<void> configureDependencies() async => getIt.init();
+```
+
+## Lệnh tạo lại file cấu hình
+
+```
+
+flutter pub run build_runner build --delete-conflicting-outputs
+
+```
+
+## Lưu ý
+
+- Sử dụng @LazySingleton cho các dependency dùng lại nhiều lần trong vòng đời ứng dụng.
+
+- Sử dụng @injectable cho các class có thể tạo lại mỗi lần hoặc không cần cache.
+
+- Tránh lạm dụng injection cho các class thuần túy hoặc không mang tính phụ thuộc.

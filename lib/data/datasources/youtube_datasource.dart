@@ -1,151 +1,198 @@
 import 'package:injectable/injectable.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
-import '../models/video_info_model.dart';
-import '../models/playlist_info_model.dart';
+import '../../domain/entities/video_info.dart';
 
-abstract class YouTubeDataSource {
-  Future<VideoInfoModel> getVideoInfo(String url);
-  Future<PlaylistInfoModel> getPlaylistInfo(String url);
-  Future<List<VideoInfoModel>> getPlaylistVideos(String playlistId);
-  Future<bool> isValidYouTubeUrl(String url);
-  Future<String> extractVideoId(String url);
-  Future<String> extractPlaylistId(String url);
-}
+@lazySingleton
+class YouTubeDataSource {
+  final YoutubeExplode _yt;
 
-@Injectable(as: YouTubeDataSource)
-class YouTubeDataSourceImpl implements YouTubeDataSource {
-  final YoutubeExplode _youtubeExplode;
+  YouTubeDataSource() : _yt = YoutubeExplode();
 
-  YouTubeDataSourceImpl(this._youtubeExplode);
-
-  @override
-  Future<VideoInfoModel> getVideoInfo(String url) async {
+  /// Analyzes a YouTube video and returns video information
+  ///
+  /// [url] - The YouTube video URL
+  /// Returns [VideoInfo] with complete metadata
+  /// Throws [Exception] if video cannot be analyzed
+  Future<VideoInfo> analyzeVideo(String url) async {
     try {
-      final video = await _youtubeExplode.videos.get(url);
-      final manifest = await _youtubeExplode.videos.streamsClient.getManifest(
-        video.id,
-      );
+      // Extract video ID
+      final videoId = _extractVideoId(url);
+      if (videoId == null) {
+        throw Exception('Could not extract video ID from URL');
+      }
 
-      final videoStreams = manifest.video
-          .map(
-            (stream) => VideoStreamModel(
-              url: stream.url.toString(),
-              format: stream.container.name,
-              quality: stream.videoQuality.name,
-              width: 1920, // Default width
-              height: 1080, // Default height
-              bitrate: 1000000, // Default bitrate
-              fileSize: stream.size.totalBytes,
-              codec: 'H.264', // Default codec
-            ),
-          )
-          .toList();
+      // Get video details
+      final video = await _yt.videos.get(videoId);
+      // final manifest = await _yt.videos.streamsClient.getManifest(videoId);
 
-      final audioStreams = manifest.audioOnly
-          .map(
-            (stream) => AudioStreamModel(
-              url: stream.url.toString(),
-              format: stream.container.name,
-              bitrate: 128000, // Default bitrate
-              fileSize: stream.size.totalBytes,
-              codec: 'AAC', // Default codec
-            ),
-          )
-          .toList();
+      // Get video streams (for future use)
+      // final videoStreams = manifest.muxed;
+      // final audioStreams = manifest.audioOnly;
 
-      final subtitles = <SubtitleInfoModel>[];
-
-      return VideoInfoModel(
+      // Create VideoInfo entity
+      final videoInfo = VideoInfo(
         id: video.id.value,
         title: video.title,
-        description: video.description,
+        author: video.author,
         duration: video.duration ?? Duration.zero,
-        channelName: video.author,
-        channelId: video.channelId.value,
-        thumbnailUrl: video.thumbnails.highResUrl,
-        uploadDate: video.uploadDate?.toIso8601String(),
+        thumbnailUrl: _getBestThumbnailUrl(videoId),
+        description: video.description,
+        uploadDate: video.uploadDate ?? DateTime.now(),
         viewCount: video.engagement.viewCount,
-        likeCount: video.engagement.likeCount,
-        videoStreams: videoStreams,
-        audioStreams: audioStreams,
-        subtitles: subtitles,
-        isPrivate: false, // Default value
-        isAgeRestricted: false, // Default value
-        isRegionBlocked: false,
-      );
-    } catch (e) {
-      throw Exception('Failed to get video info: $e');
-    }
-  }
-
-  @override
-  Future<PlaylistInfoModel> getPlaylistInfo(String url) async {
-    try {
-      final playlist = await _youtubeExplode.playlists.get(url);
-      final videos = await _youtubeExplode.playlists
-          .getVideos(playlist.id)
-          .toList();
-
-      final videoModels = await Future.wait(
-        videos.map((video) => getVideoInfo(video.url)),
+        tags: video.keywords.toList(),
+        url: url,
       );
 
-      return PlaylistInfoModel(
-        id: playlist.id.value,
-        title: playlist.title,
-        description: playlist.description,
-        channelName: playlist.author,
-        channelId: '', // Default empty string
-        thumbnailUrl: playlist.thumbnails.highResUrl,
-        videoCount: videos.length,
-        videos: videoModels,
-        isPrivate: false, // Default value
-        isRegionBlocked: false,
-      );
+      return videoInfo;
     } catch (e) {
-      throw Exception('Failed to get playlist info: $e');
+      if (e is VideoUnavailableException) {
+        throw Exception('Video is unavailable or private');
+      } else if (e is VideoRequiresPurchaseException) {
+        throw Exception('Video requires purchase');
+      } else if (e is VideoUnplayableException) {
+        throw Exception('Video is unplayable');
+      } else {
+        throw Exception('Failed to analyze video: $e');
+      }
     }
   }
 
-  @override
-  Future<List<VideoInfoModel>> getPlaylistVideos(String playlistId) async {
+  /// Analyzes a YouTube playlist and returns video information for all videos
+  ///
+  /// [playlistUrl] - The YouTube playlist URL
+  /// Returns list of [VideoInfo] for all videos in playlist
+  /// Throws [Exception] if playlist cannot be analyzed
+  Future<List<VideoInfo>> analyzePlaylist(String playlistUrl) async {
     try {
-      final videos = await _youtubeExplode.playlists
-          .getVideos(playlistId)
-          .toList();
-      return await Future.wait(videos.map((video) => getVideoInfo(video.url)));
+      // Extract playlist ID
+      final playlistId = _extractPlaylistId(playlistUrl);
+      if (playlistId == null) {
+        throw Exception('Could not extract playlist ID from URL');
+      }
+
+      // Get playlist (for future use)
+      // final playlist = await _yt.playlists.get(playlistId);
+      final videos = <VideoInfo>[];
+
+      // Get videos from playlist
+      await for (final video in _yt.playlists.getVideos(playlistId)) {
+        try {
+          final videoInfo = await analyzeVideo(video.url);
+          videos.add(videoInfo);
+        } catch (e) {
+          // Skip videos that cannot be analyzed
+          // print('Skipping video ${video.id}: $e');
+        }
+      }
+
+      return videos;
     } catch (e) {
-      throw Exception('Failed to get playlist videos: $e');
+      throw Exception('Failed to analyze playlist: $e');
     }
   }
 
-  @override
-  Future<bool> isValidYouTubeUrl(String url) async {
-    try {
-      final uri = Uri.parse(url);
-      return uri.host.contains('youtube.com') || uri.host.contains('youtu.be');
-    } catch (e) {
-      return false;
-    }
+  /// Validates if a URL is a valid YouTube video URL
+  ///
+  /// [url] - The URL to validate
+  /// Returns true if URL is valid, false otherwise
+  bool isValidVideoUrl(String url) {
+    return _isValidVideoUrl(url);
   }
 
-  @override
-  Future<String> extractVideoId(String url) async {
-    try {
-      final video = await _youtubeExplode.videos.get(url);
-      return video.id.value;
-    } catch (e) {
-      throw Exception('Failed to extract video ID: $e');
-    }
+  /// Validates if a URL is a valid YouTube playlist URL
+  ///
+  /// [url] - The URL to validate
+  /// Returns true if URL is valid, false otherwise
+  bool isValidPlaylistUrl(String url) {
+    final playlistPattern = RegExp(
+      r'^(https?://)?(www\.)?(youtube\.com/playlist\?list=|youtube\.com/watch\?.*&list=)[a-zA-Z0-9_-]+.*$',
+      caseSensitive: false,
+    );
+    return playlistPattern.hasMatch(url);
   }
 
-  @override
-  Future<String> extractPlaylistId(String url) async {
-    try {
-      final playlist = await _youtubeExplode.playlists.get(url);
-      return playlist.id.value;
-    } catch (e) {
-      throw Exception('Failed to extract playlist ID: $e');
+  /// Extracts video ID from YouTube URL
+  ///
+  /// [url] - The YouTube URL
+  /// Returns video ID if found, null otherwise
+  String? extractVideoId(String url) {
+    return _extractVideoId(url);
+  }
+
+  /// Extracts playlist ID from YouTube URL
+  ///
+  /// [url] - The YouTube playlist URL
+  /// Returns playlist ID if found, null otherwise
+  String? extractPlaylistId(String url) {
+    return _extractPlaylistId(url);
+  }
+
+  /// Gets the best thumbnail URL for a video
+  ///
+  /// [videoId] - The YouTube video ID
+  /// Returns the best quality thumbnail URL
+  String _getBestThumbnailUrl(String videoId) {
+    // Try to get the highest quality thumbnail
+    const qualities = ['maxresdefault', 'hqdefault', 'mqdefault', 'sddefault'];
+
+    for (final quality in qualities) {
+      final url = 'https://img.youtube.com/vi/$videoId/$quality.jpg';
+      // In a real implementation, you might want to check if the URL exists
+      return url;
     }
+
+    // Fallback to default thumbnail
+    return 'https://img.youtube.com/vi/$videoId/default.jpg';
+  }
+
+  /// Extracts playlist ID from YouTube URL
+  ///
+  /// [url] - The YouTube playlist URL
+  /// Returns playlist ID if found, null otherwise
+  String? _extractPlaylistId(String url) {
+    final patterns = [
+      RegExp(
+        r'(?:youtube\.com/playlist\?list=|youtube\.com/watch\?.*&list=)([a-zA-Z0-9_-]+)',
+      ),
+    ];
+
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(url);
+      if (match != null) {
+        return match.group(1);
+      }
+    }
+    return null;
+  }
+
+  /// Validates if the provided URL is a valid YouTube video URL
+  bool _isValidVideoUrl(String url) {
+    final youtubeVideoPattern = RegExp(
+      r'^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)[a-zA-Z0-9_-]{11}.*$',
+      caseSensitive: false,
+    );
+    return youtubeVideoPattern.hasMatch(url);
+  }
+
+  /// Extracts video ID from YouTube URL
+  String? _extractVideoId(String url) {
+    final patterns = [
+      RegExp(
+        r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})',
+      ),
+    ];
+
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(url);
+      if (match != null) {
+        return match.group(1);
+      }
+    }
+    return null;
+  }
+
+  /// Disposes the YouTube client
+  void dispose() {
+    _yt.close();
   }
 }

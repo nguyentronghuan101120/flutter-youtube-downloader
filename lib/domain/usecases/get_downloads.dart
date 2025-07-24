@@ -44,7 +44,7 @@ class GetQueuedDownloads {
 
   Future<Either<Failure, List<DownloadTask>>> call() async {
     try {
-      final downloads = await repository.getQueuedDownloads();
+      final downloads = await repository.getAllDownloads();
       return Right(downloads);
     } catch (e) {
       return Left(CacheFailure(e.toString()));

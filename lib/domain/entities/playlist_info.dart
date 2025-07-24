@@ -1,42 +1,24 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'video_info.dart';
 
-class PlaylistInfo extends Equatable {
-  final String id;
-  final String title;
-  final String description;
-  final String channelName;
-  final String channelId;
-  final String thumbnailUrl;
-  final int videoCount;
-  final List<VideoInfo> videos;
-  final bool isPrivate;
-  final bool isRegionBlocked;
+part 'playlist_info.freezed.dart';
+part 'playlist_info.g.dart';
 
-  const PlaylistInfo({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.channelName,
-    required this.channelId,
-    required this.thumbnailUrl,
-    required this.videoCount,
-    required this.videos,
-    this.isPrivate = false,
-    this.isRegionBlocked = false,
-  });
+@freezed
+class PlaylistInfo with _$PlaylistInfo {
+  const factory PlaylistInfo({
+    required String id,
+    required String title,
+    required String description,
+    required String channelName,
+    required String channelId,
+    required String thumbnailUrl,
+    required int videoCount,
+    required List<VideoInfo> videos,
+    @Default(false) bool isPrivate,
+    @Default(false) bool isRegionBlocked,
+  }) = _PlaylistInfo;
 
-  @override
-  List<Object?> get props => [
-    id,
-    title,
-    description,
-    channelName,
-    channelId,
-    thumbnailUrl,
-    videoCount,
-    videos,
-    isPrivate,
-    isRegionBlocked,
-  ];
+  factory PlaylistInfo.fromJson(Map<String, dynamic> json) =>
+      _$PlaylistInfoFromJson(json);
 }

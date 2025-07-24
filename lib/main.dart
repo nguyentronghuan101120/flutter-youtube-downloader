@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/dependency_injection/injection.dart';
 import 'presentation/bloc/video_analysis/video_analysis_cubit.dart';
+import 'presentation/bloc/playlist_analysis/playlist_analysis_cubit.dart';
 import 'presentation/bloc/preferences/preferences_cubit.dart';
 import 'presentation/pages/home_page.dart';
 
@@ -21,6 +22,9 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider<VideoAnalysisCubit>(
           create: (context) => getIt<VideoAnalysisCubit>(),
+        ),
+        BlocProvider<PlaylistAnalysisCubit>(
+          create: (context) => getIt<PlaylistAnalysisCubit>(),
         ),
         BlocProvider<PreferencesCubit>(
           create: (context) => getIt<PreferencesCubit>(),

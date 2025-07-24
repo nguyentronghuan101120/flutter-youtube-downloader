@@ -1,172 +1,89 @@
 import '../../domain/entities/video_info.dart';
 
-class VideoInfoModel extends VideoInfo {
-  const VideoInfoModel({
-    required super.id,
-    required super.title,
-    required super.description,
-    required super.duration,
-    required super.channelName,
-    required super.channelId,
-    required super.thumbnailUrl,
-    super.uploadDate,
-    super.viewCount,
-    super.likeCount,
-    required super.videoStreams,
-    required super.audioStreams,
-    required super.subtitles,
-    super.isPrivate,
-    super.isAgeRestricted,
-    super.isRegionBlocked,
-  });
+// VideoInfoModel giờ chỉ là alias cho VideoInfo vì entity đã có freezed
+typedef VideoInfoModel = VideoInfo;
 
-  factory VideoInfoModel.fromMap(Map<String, dynamic> map) {
-    return VideoInfoModel(
-      id: map['id'] ?? '',
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
-      duration: Duration(seconds: map['duration'] ?? 0),
-      channelName: map['channelName'] ?? '',
-      channelId: map['channelId'] ?? '',
-      thumbnailUrl: map['thumbnailUrl'] ?? '',
-      uploadDate: map['uploadDate'],
-      viewCount: map['viewCount'],
-      likeCount: map['likeCount'],
-      videoStreams: List<VideoStreamModel>.from(
-        map['videoStreams']?.map((x) => VideoStreamModel.fromMap(x)) ?? [],
-      ),
-      audioStreams: List<AudioStreamModel>.from(
-        map['audioStreams']?.map((x) => AudioStreamModel.fromMap(x)) ?? [],
-      ),
-      subtitles: List<SubtitleInfoModel>.from(
-        map['subtitles']?.map((x) => SubtitleInfoModel.fromMap(x)) ?? [],
-      ),
-      isPrivate: map['isPrivate'] ?? false,
-      isAgeRestricted: map['isAgeRestricted'] ?? false,
-      isRegionBlocked: map['isRegionBlocked'] ?? false,
-    );
+// Extension để thêm các helper methods cho VideoInfoModel
+extension VideoInfoModelUtils on VideoInfoModel {
+  /// Creates VideoInfoModel from JSON map
+  static VideoInfoModel fromMap(Map<String, dynamic> map) {
+    return VideoInfoModel.fromJson(map);
   }
 
+  /// Converts VideoInfoModel to JSON map
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'title': title,
-      'description': description,
-      'duration': duration.inSeconds,
-      'channelName': channelName,
-      'channelId': channelId,
-      'thumbnailUrl': thumbnailUrl,
-      'uploadDate': uploadDate,
-      'viewCount': viewCount,
-      'likeCount': likeCount,
-      'videoStreams': videoStreams
-          .map((x) => (x as VideoStreamModel).toMap())
-          .toList(),
-      'audioStreams': audioStreams
-          .map((x) => (x as AudioStreamModel).toMap())
-          .toList(),
-      'subtitles': subtitles
-          .map((x) => (x as SubtitleInfoModel).toMap())
-          .toList(),
-      'isPrivate': isPrivate,
-      'isAgeRestricted': isAgeRestricted,
-      'isRegionBlocked': isRegionBlocked,
-    };
+    return toJson();
+  }
+
+  /// Creates VideoInfoModel from VideoInfo entity
+  static VideoInfoModel fromEntity(VideoInfo entity) {
+    return entity;
+  }
+
+  /// Converts VideoInfoModel to VideoInfo entity
+  VideoInfo toEntity() {
+    return this;
+  }
+
+  /// Validates if the model data is valid
+  bool isValid() {
+    return id.isNotEmpty &&
+        title.isNotEmpty &&
+        author.isNotEmpty &&
+        thumbnailUrl.isNotEmpty &&
+        url.isNotEmpty;
+  }
+
+  /// Gets formatted duration string
+  String get formattedDuration {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    } else {
+      return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+  }
+
+  /// Gets formatted view count
+  String get formattedViewCount {
+    if (viewCount < 1000) {
+      return viewCount.toString();
+    } else if (viewCount < 1000000) {
+      return '${(viewCount / 1000).toStringAsFixed(1)}K';
+    } else if (viewCount < 1000000000) {
+      return '${(viewCount / 1000000).toStringAsFixed(1)}M';
+    } else {
+      return '${(viewCount / 1000000000).toStringAsFixed(1)}B';
+    }
+  }
+
+  /// Gets formatted upload date
+  String get formattedUploadDate {
+    final now = DateTime.now();
+    final difference = now.difference(uploadDate);
+
+    if (difference.inDays > 365) {
+      final years = (difference.inDays / 365).floor();
+      return '$years year${years > 1 ? 's' : ''} ago';
+    } else if (difference.inDays > 30) {
+      final months = (difference.inDays / 30).floor();
+      return '$months month${months > 1 ? 's' : ''} ago';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+    } else {
+      return 'Just now';
+    }
   }
 }
 
-class VideoStreamModel extends VideoStream {
-  const VideoStreamModel({
-    required super.url,
-    required super.format,
-    required super.quality,
-    required super.width,
-    required super.height,
-    required super.bitrate,
-    required super.fileSize,
-    required super.codec,
-  });
-
-  factory VideoStreamModel.fromMap(Map<String, dynamic> map) {
-    return VideoStreamModel(
-      url: map['url'] ?? '',
-      format: map['format'] ?? '',
-      quality: map['quality'] ?? '',
-      width: map['width'] ?? 0,
-      height: map['height'] ?? 0,
-      bitrate: map['bitrate'] ?? 0,
-      fileSize: map['fileSize'] ?? 0,
-      codec: map['codec'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'url': url,
-      'format': format,
-      'quality': quality,
-      'width': width,
-      'height': height,
-      'bitrate': bitrate,
-      'fileSize': fileSize,
-      'codec': codec,
-    };
-  }
-}
-
-class AudioStreamModel extends AudioStream {
-  const AudioStreamModel({
-    required super.url,
-    required super.format,
-    required super.bitrate,
-    required super.fileSize,
-    required super.codec,
-  });
-
-  factory AudioStreamModel.fromMap(Map<String, dynamic> map) {
-    return AudioStreamModel(
-      url: map['url'] ?? '',
-      format: map['format'] ?? '',
-      bitrate: map['bitrate'] ?? 0,
-      fileSize: map['fileSize'] ?? 0,
-      codec: map['codec'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'url': url,
-      'format': format,
-      'bitrate': bitrate,
-      'fileSize': fileSize,
-      'codec': codec,
-    };
-  }
-}
-
-class SubtitleInfoModel extends SubtitleInfo {
-  const SubtitleInfoModel({
-    required super.languageCode,
-    required super.languageName,
-    required super.url,
-    super.isAutoGenerated,
-  });
-
-  factory SubtitleInfoModel.fromMap(Map<String, dynamic> map) {
-    return SubtitleInfoModel(
-      languageCode: map['languageCode'] ?? '',
-      languageName: map['languageName'] ?? '',
-      url: map['url'] ?? '',
-      isAutoGenerated: map['isAutoGenerated'] ?? false,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'languageCode': languageCode,
-      'languageName': languageName,
-      'url': url,
-      'isAutoGenerated': isAutoGenerated,
-    };
-  }
-}
+// Các model classes khác cũng đơn giản hóa
+typedef VideoStreamModel = VideoStream;
+typedef AudioStreamModel = AudioStream;
+typedef SubtitleInfoModel = SubtitleInfo;

@@ -1,34 +1,37 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../../../domain/entities/video_info.dart';
+import '../../../domain/entities/playlist_info.dart';
 
-part 'video_analysis_state.freezed.dart';
+part 'playlist_analysis_state.freezed.dart';
 
-enum VideoAnalysisStatus { initial, loading, success, error }
+enum PlaylistAnalysisStatus { initial, loading, success, error }
 
 @freezed
-class VideoAnalysisState with _$VideoAnalysisState {
+class PlaylistAnalysisState with _$PlaylistAnalysisState {
   /// Creates initial state
-  const factory VideoAnalysisState.initial() = _Initial;
+  const factory PlaylistAnalysisState.initial() = _Initial;
 
   /// Creates loading state
-  const factory VideoAnalysisState.loading({String? lastAnalyzedUrl}) =
-      _Loading;
+  const factory PlaylistAnalysisState.loading({
+    String? lastAnalyzedUrl,
+    int? processedCount,
+    int? totalCount,
+  }) = _Loading;
 
   /// Creates success state
-  const factory VideoAnalysisState.success({
-    required VideoInfo videoInfo,
+  const factory PlaylistAnalysisState.success({
+    required PlaylistInfo playlistInfo,
     String? lastAnalyzedUrl,
   }) = _Success;
 
   /// Creates error state
-  const factory VideoAnalysisState.error({
+  const factory PlaylistAnalysisState.error({
     required String errorMessage,
     String? lastAnalyzedUrl,
   }) = _Error;
 }
 
 // Extension để thêm các helper methods
-extension VideoAnalysisStateUtils on VideoAnalysisState {
+extension PlaylistAnalysisStateUtils on PlaylistAnalysisState {
   /// Checks if the state is in initial state
   bool get isInitial => this is _Initial;
 
@@ -41,10 +44,10 @@ extension VideoAnalysisStateUtils on VideoAnalysisState {
   /// Checks if the state has an error
   bool get isError => this is _Error;
 
-  /// Checks if video info is available
-  bool get hasVideoInfo => when(
+  /// Checks if playlist info is available
+  bool get hasPlaylistInfo => when(
     initial: () => false,
-    loading: (_) => false,
+    loading: (_, __, ___) => false,
     success: (_, __) => true,
     error: (_, __) => false,
   );
@@ -52,23 +55,23 @@ extension VideoAnalysisStateUtils on VideoAnalysisState {
   /// Checks if there's an error message
   bool get hasError => when(
     initial: () => false,
-    loading: (_) => false,
+    loading: (_, __, ___) => false,
     success: (_, __) => false,
     error: (errorMessage, _) => errorMessage.isNotEmpty,
   );
 
-  /// Gets video info if available
-  VideoInfo? get videoInfo => when(
+  /// Gets playlist info if available
+  PlaylistInfo? get playlistInfo => when(
     initial: () => null,
-    loading: (_) => null,
-    success: (videoInfo, _) => videoInfo,
+    loading: (_, __, ___) => null,
+    success: (playlistInfo, _) => playlistInfo,
     error: (_, __) => null,
   );
 
   /// Gets error message if available
   String? get errorMessage => when(
     initial: () => null,
-    loading: (_) => null,
+    loading: (_, __, ___) => null,
     success: (_, __) => null,
     error: (errorMessage, _) => errorMessage,
   );
@@ -76,8 +79,17 @@ extension VideoAnalysisStateUtils on VideoAnalysisState {
   /// Gets last analyzed URL
   String? get lastAnalyzedUrl => when(
     initial: () => null,
-    loading: (lastAnalyzedUrl) => lastAnalyzedUrl,
+    loading: (lastAnalyzedUrl, _, __) => lastAnalyzedUrl,
     success: (_, lastAnalyzedUrl) => lastAnalyzedUrl,
     error: (_, lastAnalyzedUrl) => lastAnalyzedUrl,
+  );
+
+  /// Gets progress information for loading state
+  ({int processed, int total})? get progress => when(
+    initial: () => null,
+    loading: (_, processedCount, totalCount) =>
+        (processed: processedCount ?? 0, total: totalCount ?? 0),
+    success: (_, __) => null,
+    error: (_, __) => null,
   );
 }

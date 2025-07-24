@@ -1,39 +1,107 @@
 import '../entities/download_task.dart';
 
 abstract class DownloadRepository {
-  /// Bắt đầu tải xuống video/audio
-  Stream<DownloadTask> downloadVideo(DownloadTask task);
+  /// Starts a new download task
+  ///
+  /// [task] - The download task to start
+  /// Returns the updated task with status
+  /// Throws [Exception] if download fails to start
+  Future<DownloadTask> startDownload(DownloadTask task);
 
-  /// Tạm dừng tải xuống
-  Future<void> pauseDownload(String taskId);
+  /// Pauses an active download task
+  ///
+  /// [taskId] - The ID of the task to pause
+  /// Returns the updated task with paused status
+  /// Throws [Exception] if task not found or cannot be paused
+  Future<DownloadTask> pauseDownload(String taskId);
 
-  /// Tiếp tục tải xuống
-  Future<void> resumeDownload(String taskId);
+  /// Resumes a paused download task
+  ///
+  /// [taskId] - The ID of the task to resume
+  /// Returns the updated task with downloading status
+  /// Throws [Exception] if task not found or cannot be resumed
+  Future<DownloadTask> resumeDownload(String taskId);
 
-  /// Hủy tải xuống
-  Future<void> cancelDownload(String taskId);
+  /// Cancels a download task
+  ///
+  /// [taskId] - The ID of the task to cancel
+  /// Returns the updated task with cancelled status
+  /// Throws [Exception] if task not found
+  Future<DownloadTask> cancelDownload(String taskId);
 
-  /// Thử lại tải xuống
-  Future<void> retryDownload(String taskId);
+  /// Gets all download tasks
+  ///
+  /// Returns list of all download tasks
+  Future<List<DownloadTask>> getAllDownloads();
 
-  /// Lấy danh sách tác vụ đang tải
+  /// Gets a specific download task by ID
+  ///
+  /// [taskId] - The ID of the task to retrieve
+  /// Returns the download task if found, null otherwise
+  Future<DownloadTask?> getDownloadById(String taskId);
+
+  /// Gets active download tasks (downloading or paused)
+  ///
+  /// Returns list of active download tasks
   Future<List<DownloadTask>> getActiveDownloads();
 
-  /// Lấy danh sách tác vụ đã hoàn thành
+  /// Gets completed download tasks
+  ///
+  /// Returns list of completed download tasks
   Future<List<DownloadTask>> getCompletedDownloads();
 
-  /// Lấy danh sách tác vụ trong hàng đợi
-  Future<List<DownloadTask>> getQueuedDownloads();
+  /// Gets failed download tasks
+  ///
+  /// Returns list of failed download tasks
+  Future<List<DownloadTask>> getFailedDownloads();
 
-  /// Xóa tác vụ đã hoàn thành
-  Future<void> removeCompletedDownload(String taskId);
+  /// Updates download progress
+  ///
+  /// [taskId] - The ID of the task to update
+  /// [bytesDownloaded] - Number of bytes downloaded
+  /// [totalBytes] - Total number of bytes
+  /// Returns the updated task with new progress
+  /// Throws [Exception] if task not found
+  Future<DownloadTask> updateProgress(
+    String taskId,
+    int bytesDownloaded,
+    int totalBytes,
+  );
 
-  /// Xóa tất cả tác vụ đã hoàn thành
-  Future<void> clearCompletedDownloads();
+  /// Retries a failed download task
+  ///
+  /// [taskId] - The ID of the task to retry
+  /// Returns the updated task with retry status
+  /// Throws [Exception] if task not found or cannot be retried
+  Future<DownloadTask> retryDownload(String taskId);
 
-  /// Lấy thông tin tác vụ theo ID
-  Future<DownloadTask?> getDownloadTask(String taskId);
+  /// Clears completed downloads
+  ///
+  /// Removes all completed download tasks from storage
+  /// Returns number of tasks cleared
+  Future<int> clearCompletedDownloads();
 
-  /// Cập nhật thông tin tác vụ
-  Future<void> updateDownloadTask(DownloadTask task);
+  /// Clears failed downloads
+  ///
+  /// Removes all failed download tasks from storage
+  /// Returns number of tasks cleared
+  Future<int> clearFailedDownloads();
+
+  /// Gets download queue status
+  ///
+  /// Returns information about current queue state
+  Future<Map<String, dynamic>> getQueueStatus();
+
+  /// Reorders download queue
+  ///
+  /// [taskIds] - List of task IDs in new order
+  /// Throws [Exception] if any task ID is invalid
+  Future<void> reorderQueue(List<String> taskIds);
+
+  /// Sets download priority
+  ///
+  /// [taskId] - The ID of the task
+  /// [priority] - Priority level (1 = highest, 5 = lowest)
+  /// Throws [Exception] if task not found
+  Future<void> setPriority(String taskId, int priority);
 }
