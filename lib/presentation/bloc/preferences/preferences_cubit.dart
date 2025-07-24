@@ -18,7 +18,7 @@ class PreferencesCubit extends Cubit<PreferencesState> {
   Future<void> loadPreferences() async {
     emit(const PreferencesLoading());
     try {
-      final result = await _getUserPreferences.execute(null);
+      final result = await _getUserPreferences.execute();
       if (result.isSuccess) {
         emit(PreferencesLoaded(preferences: result.data!));
       } else {

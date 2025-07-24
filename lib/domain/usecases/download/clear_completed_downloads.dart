@@ -1,25 +1,25 @@
 import 'package:injectable/injectable.dart';
 import '../../repositories/download_repository.dart';
-import '../../../core/error/failures.dart';
-import '../../../core/result/result.dart' as result;
-import 'package:dartz/dartz.dart';
+import '../../../core/result/result.dart';
+import '../../../core/usecases/base_usecase.dart';
 
 @injectable
-class ClearCompletedDownloads {
+class ClearCompletedDownloads implements BaseUseCaseNoParams<Result<void>> {
   final DownloadRepository repository;
 
   ClearCompletedDownloads(this.repository);
 
-  Future<Either<Failure, int>> call() async {
+  @override
+  Future<Result<void>> execute() async {
     try {
       final result = await repository.clearCompletedDownloads();
       if (result.isSuccess) {
-        return Right(result.data!);
+        return const Result.success(null);
       } else {
-        return Left(CacheFailure(result.errorMessage!));
+        return Result.failure(result.errorMessage!);
       }
     } catch (e) {
-      return Left(CacheFailure(e.toString()));
+      return Result.failure('Failed to clear completed downloads: $e');
     }
   }
 }

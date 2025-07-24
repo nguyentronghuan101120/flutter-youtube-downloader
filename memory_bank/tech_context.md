@@ -6,83 +6,283 @@
 
 - **Flutter 3.8.1+** - Cross-platform UI framework
 - **Dart 3.8.1+** - Programming language
-- **Material Design 3** - UI/UX design system
+- **Material Design 3** - UI design system
 
 ### State Management
 
-- **flutter_bloc 9.1.1** - BLoC pattern implementation
-- **equatable 2.0.5** - Value equality
-- **dartz 0.10.1** - Functional programming utilities
+- **flutter_bloc** - State management library
+- **Cubit pattern** - Lightweight state management
+- **Freezed** - Immutable data classes
 
 ### Dependency Injection
 
-- **get_it 8.0.3** - Service locator
-- **injectable 2.5.0** - Code generation cho DI
-- **injectable_generator 2.7.0** - DI code generation
+- **GetIt** - Service locator
+- **Injectable** - Code generation for DI
+- **build_runner** - Code generation tool
 
-### Data Classes & Serialization
+### Data Management
 
-- **freezed 2.5.8** - Immutable data classes
-- **freezed_annotation 2.4.4** - Freezed annotations
-- **json_annotation 4.9.0** - JSON serialization
-- **json_serializable 6.9.0** - JSON code generation
+- **youtube_explode_dart** - YouTube API client
+- **path_provider** - Platform-specific paths
+- **sqflite** - SQLite database (planned)
 
-### YouTube & Media
+### Media Processing
 
-- **youtube_explode_dart 2.5.1** - YouTube API client
-- **ffmpeg_kit_flutter_new 2.0.0** - Media processing
-- **dio 5.8.0+1** - HTTP client
+- **ffmpeg_kit_flutter_new** - FFmpeg integration
+- **Audio conversion** - Multiple format support
+- **Video processing** - Stream extraction
 
-### File System & Storage
+### File Management
 
-- **path_provider 2.1.5** - Cross-platform file paths
-- **permission_handler 12.0.1** - Platform permissions
-- **file_picker 10.2.0** - File selection
-- **sqflite 2.4.2** - SQLite database
-- **shared_preferences 2.5.3** - Local storage
-
-### UI Components
-
-- **flutter_svg 2.0.10+1** - SVG support
-- **cached_network_image 3.4.1** - Image caching
-- **cupertino_icons 1.0.8** - iOS-style icons
-
-### Internationalization
-
-- **intl 0.20.2** - Localization utilities
-- **flutter_localizations** - Flutter i18n
-
-### Development Tools
-
-- **build_runner 2.4.0** - Code generation
-- **flutter_lints 5.0.0** - Code linting
-- **analysis_options.yaml** - Lint configuration
+- **dart:io** - File system operations
+- **Platform-specific paths** - Android/iOS directories
+- **Permission handling** - Storage permissions
 
 ## 📱 Platform Support
 
-### Mobile Platforms
+### Android
 
-- **Android** - Native Android app
-- **iOS** - Native iOS app
+- **API Level 21+** - Android 5.0+
+- **Storage permissions** - External storage access
+- **Download directory** - System Downloads folder
+- **File paths** - `/storage/emulated/0/Download/`
 
-### Desktop Platforms
+### iOS
 
-- **Windows** - Windows desktop app
-- **macOS** - macOS desktop app
-- **Linux** - Linux desktop app
+- **iOS 12.0+** - Minimum iOS version
+- **App documents** - App-specific storage
+- **File sharing** - iTunes file sharing
+- **Permission handling** - iOS file access
 
-### Web Platform
+### Web
 
-- **Web** - Progressive web app
+- **Browser APIs** - File download API
+- **Local storage** - Browser storage
+- **Cross-origin** - CORS handling
 
-## 🔧 Development Environment
+### Desktop
 
-### IDE & Tools
+- **Windows/macOS/Linux** - Desktop platforms
+- **File system** - Native file operations
+- **Audio conversion** - FFmpeg support
 
-- **VS Code** / **Android Studio** - Development IDE
-- **Flutter SDK** - Framework SDK
-- **Dart SDK** - Language SDK
-- **Git** - Version control
+## 🔧 Development Tools
+
+### IDE Support
+
+- **VS Code** - Primary development IDE
+- **Android Studio** - Alternative IDE
+- **Flutter Inspector** - UI debugging
+- **Dart DevTools** - Performance analysis
+
+### Code Generation
+
+- **build_runner** - Code generation tool
+- **Freezed** - Data class generation
+- **Injectable** - DI code generation
+- **JSON serialization** - API response mapping
+
+### Testing Framework
+
+- **flutter_test** - Unit testing
+- **mockito** - Mocking framework
+- **integration_test** - Integration testing
+- **widget_test** - Widget testing
+
+## 📊 Architecture Components
+
+### Core Services
+
+#### YouTube Service
+
+- **youtube_explode_dart** - YouTube API client
+- **Rate limiting** - API abuse prevention
+- **Error handling** - YouTube-specific exceptions
+- **Stream selection** - Video/audio stream matching
+- **Metadata extraction** - Video information
+
+#### Download Service
+
+- **Progress tracking** - Real-time updates
+- **Stream selection** - Format/quality matching
+- **File management** - Safe file naming
+- **Platform adaptation** - Cross-platform paths
+- **Error handling** - Download failures
+
+#### Audio Conversion Service
+
+- **ffmpeg_kit_flutter_new** - FFmpeg integration
+- **Multiple formats** - MP3, AAC, OGG, WAV, FLAC
+- **Quality options** - Configurable bitrates
+- **Error handling** - Conversion failures
+- **File management** - Output directory handling
+
+#### Storage Repository
+
+- **path_provider** - Platform-specific paths
+- **Permission handling** - Storage permissions
+- **File operations** - Create, move, delete
+- **Space management** - Available space checking
+- **Directory management** - Path creation
+
+### Data Layer
+
+#### Repository Pattern
+
+- **Interface** - Domain layer contracts
+- **Implementation** - Data layer implementations
+- **Dependency injection** - GetIt registration
+- **Error handling** - Result type usage
+
+#### Data Sources
+
+- **YouTube DataSource** - YouTube API access
+- **Download DataSource** - Download management
+- **Storage DataSource** - File system access
+- **Preferences DataSource** - User settings
+
+### Presentation Layer
+
+#### State Management
+
+- **DownloadCubit** - Download state management
+- **VideoAnalysisCubit** - Video analysis state
+- **PreferencesCubit** - User preferences state
+- **PlaylistAnalysisCubit** - Playlist analysis state
+
+#### UI Components
+
+- **Material Design 3** - Modern UI design
+- **Responsive layout** - Adaptive UI
+- **Accessibility** - Screen reader support
+- **Error handling** - User-friendly errors
+
+## 🔄 Data Flow Architecture
+
+### Video Analysis Flow
+
+```
+URL Input → VideoAnalysisCubit → AnalyzeVideoUseCase → VideoRepository → YouTubeService → Video Info Display
+```
+
+### Download Flow
+
+```
+Format Selection → DownloadCubit → StartDownloadUseCase → DownloadRepository → DownloadService → Progress Updates
+```
+
+### Audio Conversion Flow
+
+```
+Download Complete → AudioConversionService → FFmpeg → Output Files
+```
+
+### Storage Flow
+
+```
+File Operation → StorageRepository → Platform File System → Result
+```
+
+## 📱 Platform-Specific Implementation
+
+### Android Implementation
+
+- **Storage permissions** - `WRITE_EXTERNAL_STORAGE`, `READ_EXTERNAL_STORAGE`, `MANAGE_EXTERNAL_STORAGE`
+- **Download directory** - `/storage/emulated/0/Download/`
+- **File paths** - Android-specific path handling
+- **Permission handling** - Runtime permissions
+
+### iOS Implementation
+
+- **App documents** - App-specific storage directory
+- **File sharing** - iTunes file sharing support
+- **Permission handling** - iOS file access permissions
+- **Sandbox** - App sandbox restrictions
+
+### Web Implementation
+
+- **Browser APIs** - File download API
+- **Local storage** - Browser storage limitations
+- **Cross-origin** - CORS policy handling
+- **File system** - Browser file system API
+
+### Desktop Implementation
+
+- **Native file system** - Platform file operations
+- **Audio conversion** - FFmpeg native support
+- **File dialogs** - Native file dialogs
+- **System integration** - Platform-specific features
+
+## 🔧 Error Handling Strategy
+
+### Result Pattern
+
+- **Success/Failure states** - Explicit error handling
+- **Error messages** - User-friendly messages
+- **Error propagation** - Layer-to-layer error passing
+- **Type safety** - Compile-time error checking
+
+### Exception Types
+
+- **YouTube exceptions** - Video unavailable, private, etc.
+- **Network exceptions** - Connection failures, timeouts
+- **File exceptions** - Storage errors, permission denied
+- **FFmpeg exceptions** - Conversion failures
+
+### Error Recovery
+
+- **Retry mechanisms** - Automatic retry for transient failures
+- **Fallback options** - Alternative approaches
+- **User feedback** - Clear error messages
+- **Graceful degradation** - Partial functionality
+
+## 📊 Performance Considerations
+
+### Memory Management
+
+- **Stream disposal** - Proper resource cleanup
+- **Image caching** - Network image caching
+- **File cleanup** - Temporary file removal
+- **Memory leaks** - Prevent memory leaks
+
+### Network Optimization
+
+- **Rate limiting** - API call throttling
+- **Caching** - Response caching
+- **Retry logic** - Automatic retry mechanisms
+- **Connection pooling** - Efficient network usage
+
+### UI Performance
+
+- **Minimal rebuilds** - Efficient widget updates
+- **Lazy loading** - Load data on demand
+- **Image optimization** - Compressed images
+- **Smooth animations** - 60fps animations
+
+## 🔒 Security Implementation
+
+### Input Validation
+
+- **URL validation** - YouTube URL patterns
+- **File validation** - Safe file naming
+- **Data sanitization** - Input cleaning
+- **Permission checking** - Access control
+
+### File Security
+
+- **Safe file paths** - Path traversal prevention
+- **Permission checking** - Storage permissions
+- **File access control** - Secure file operations
+- **Sandbox restrictions** - Platform security
+
+### Data Protection
+
+- **Local storage only** - No cloud sync
+- **No sensitive data** - Minimal data collection
+- **Secure error messages** - No sensitive data exposure
+- **Permission management** - Minimal permissions
+
+## 🎯 Development Workflow
 
 ### Code Generation
 
@@ -90,136 +290,67 @@
 flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
-### Build Commands
+### Testing
 
 ```bash
-flutter pub get          # Install dependencies
-flutter run              # Run development app
-flutter build apk        # Build Android APK
-flutter build ios        # Build iOS app
-flutter build web        # Build web app
+flutter test
+flutter test integration_test/
 ```
 
-## 📁 Project Structure
+### Analysis
 
-### Core Directories
+```bash
+flutter analyze
+dart format .
+```
 
-- `lib/` - Main source code
-- `android/` - Android-specific code
-- `ios/` - iOS-specific code
-- `web/` - Web-specific code
-- `windows/` - Windows-specific code
-- `macos/` - macOS-specific code
-- `linux/` - Linux-specific code
+### Building
 
-### Configuration Files
+```bash
+flutter build apk
+flutter build ios
+flutter build web
+```
 
-- `pubspec.yaml` - Dependencies và project config
-- `analysis_options.yaml` - Lint rules
-- `devtools_options.yaml` - DevTools config
-- `.gitignore` - Git ignore rules
+## 📱 Dependencies
 
-## 🔄 Build Process
+### Core Dependencies
 
-### Development Build
+```yaml
+flutter_bloc: ^8.1.3
+get_it: ^7.6.4
+injectable: ^2.3.2
+freezed_annotation: ^2.4.1
+youtube_explode_dart: ^2.1.0
+ffmpeg_kit_flutter_new: ^6.0.3
+path_provider: ^2.1.1
+```
 
-1. **Install dependencies** - `flutter pub get`
-2. **Generate code** - `build_runner`
-3. **Run app** - `flutter run`
+### Development Dependencies
 
-### Production Build
+```yaml
+build_runner: ^2.4.7
+freezed: ^2.4.6
+injectable_generator: ^2.4.1
+json_annotation: ^4.8.1
+```
 
-1. **Clean build** - `flutter clean`
-2. **Get dependencies** - `flutter pub get`
-3. **Generate code** - `build_runner`
-4. **Build platform** - `flutter build [platform]`
+## 🔧 Configuration Files
 
-## 📊 Performance Considerations
+### Android Configuration
 
-### Memory Management
+- **android/app/src/main/AndroidManifest.xml** - Permissions và app config
+- **android/app/build.gradle.kts** - Build configuration
+- **android/gradle.properties** - Gradle properties
 
-- **Lazy loading** - Load resources on demand
-- **Image caching** - Cache network images
-- **Garbage collection** - Automatic memory cleanup
+### iOS Configuration
 
-### Network Optimization
+- **ios/Runner/Info.plist** - App configuration
+- **ios/Podfile** - CocoaPods dependencies
+- **ios/Runner.xcodeproj** - Xcode project
 
-- **Rate limiting** - YouTube API protection
-- **Retry mechanism** - Network resilience
-- **Caching** - Response caching
+### Flutter Configuration
 
-### UI Performance
-
-- **const constructors** - Widget optimization
-- **ListView.builder** - Efficient scrolling
-- **Image optimization** - Compressed images
-
-## 🔒 Security Measures
-
-### Input Validation
-
-- **URL validation** - Regex patterns
-- **Data sanitization** - XSS prevention
-- **Permission checks** - Storage access
-
-### Network Security
-
-- **HTTPS enforcement** - Secure connections
-- **API rate limiting** - Protection against abuse
-- **Error handling** - No sensitive data exposure
-
-## 📈 Scalability
-
-### Code Organization
-
-- **Clean Architecture** - Maintainable structure
-- **Dependency Injection** - Loose coupling
-- **Code generation** - Reduced boilerplate
-
-### Platform Abstraction
-
-- **Cross-platform APIs** - Unified interface
-- **Platform channels** - Native functionality
-- **Plugin system** - Extensible architecture
-
-## 🧪 Testing Strategy
-
-### Unit Testing
-
-- **Use case testing** - Business logic
-- **Repository testing** - Data layer
-- **Service testing** - Core services
-
-### Widget Testing
-
-- **UI component testing** - Widget behavior
-- **Integration testing** - Full app flow
-- **Platform testing** - Cross-platform compatibility
-
-## 📚 Documentation
-
-### Code Documentation
-
-- **Dart docs** - API documentation
-- **README.md** - Project overview
-- **Inline comments** - Code explanation
-
-### Architecture Documentation
-
-- **Clean Architecture** - Layer separation
-- **Design patterns** - Implementation patterns
-- **File structure** - Organization guide
-
-## 🔄 Version Control
-
-### Git Workflow
-
-- **Feature branches** - Development isolation
-- **Pull requests** - Code review
-- **Semantic versioning** - Release management
-
-### Dependencies Management
-
-- **pubspec.yaml** - Dependency versions
-- **pubspec.lock** - Locked versions
-- **Dependency updates** - Security patches
+- **pubspec.yaml** - Dependencies và app config
+- **analysis_options.yaml** - Code analysis rules
+- **lib/main.dart** - App entry point

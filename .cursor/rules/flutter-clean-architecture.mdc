@@ -1,114 +1,145 @@
----
-alwaysApply: true
----
-
 # 🏗️ Flutter Clean Architecture Rules
 
-## 🚨 Quy tắc nghiêm ngặt - KHÔNG VI PHẠM
+## 🚨 Quy tắc nghiêm ngặt
 
-### 1. **KHÔNG BAO GIỜ truy cập trực tiếp Service từ Cubit/Bloc**
-
-```dart
-// ❌ VI PHẠM - Cubit import và sử dụng trực tiếp Service
-import '../../../core/services/api_service.dart';
-
-class UserCubit extends Cubit<UserState> {
-  final ApiService _apiService; // ❌ Truy cập trực tiếp service
-```
+### 1. **KHÔNG truy cập Service từ Cubit/Bloc**
 
 ```dart
-// ✅ ĐÚNG - Cubit chỉ sử dụng UseCases
-import '../../../domain/usecases/user/get_user_profile.dart';
-
-class UserCubit extends Cubit<UserState> {
-  final GetUserProfile _getUserProfile; // ✅ Sử dụng usecase
+// ❌ VI PHẠM
+class VideoAnalysisCubit extends Cubit<VideoAnalysisState> {
+  final YouTubeService _youtubeService; // ❌ Truy cập trực tiếp service
 ```
-
-### 2. **BẮT BUỘC có Domain Layer cho mọi feature**
-
-- ✅ Tạo Entity trong `lib/domain/entities/`
-- ✅ Tạo Repository interface trong `lib/domain/repositories/`
-- ✅ Tạo UseCase trong `lib/domain/usecases/`
-- ❌ KHÔNG định nghĩa business logic trong Service
-
-### 3. **Model phải kế thừa từ Entity**
 
 ```dart
 // ✅ ĐÚNG
-class UserModel extends User {
-  const UserModel({
-    required super.id,
-    required super.name,
-    required super.email,
-  });
+class VideoAnalysisCubit extends Cubit<VideoAnalysisState> {
+  final AnalyzeVideo _analyzeVideo; // ✅ Sử dụng usecase
+```
 
-  factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      email: Email(map['email'] ?? ''),
-    );
-  }
+### 2. **Entity BẮT BUỘC sử dụng Freezed**
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email.value,
-    };
-  }
+```dart
+// ✅ ĐÚNG
+@freezed
+class VideoInfo with _$VideoInfo {
+  const factory VideoInfo({
+    required String id,
+    required String title,
+    required String author,
+    required Duration duration,
+  }) = _VideoInfo;
+
+  factory VideoInfo.fromJson(Map<String, dynamic> json) =>
+      _$VideoInfoFromJson(json);
 }
 ```
 
-### 4. **Repository Implementation trả về trực tiếp từ DataSource**
+### 3. **Model sử dụng typedef hoặc kế thừa Entity**
 
 ```dart
-// ✅ ĐÚNG - Trả về trực tiếp từ DataSource
-class UserRepositoryImpl implements UserRepository {
-  final UserDataSource _dataSource;
+// ✅ ĐÚNG - Typedef cho simple mapping
+typedef PlaylistInfoModel = PlaylistInfo;
 
-  UserRepositoryImpl({required UserDataSource dataSource})
-      : _dataSource = dataSource;
+// ✅ ĐÚNG - Kế thừa cho complex mapping
+class UserModel extends User {
+  const UserModel({required super.id, required super.name});
+  factory UserModel.fromMap(Map<String, dynamic> map) => UserModel(...);
+}
+```
+
+### 4. **Repository trả về trực tiếp từ DataSource**
+
+```dart
+// ✅ ĐÚNG
+@LazySingleton(as: DownloadRepository)
+class DownloadRepositoryImpl implements DownloadRepository {
+  final DownloadDataSource _dataSource;
 
   @override
-  Future<User> getUserProfile(String userId) async {
+  Future<Result<DownloadTask>> startDownload(StartDownloadParams params) async {
     try {
-      return await _dataSource.getUser(userId); // Trả về trực tiếp
+      final task = await _dataSource.startDownload(params);
+      return Result.success(task);
     } catch (e) {
-      throw Exception('Failed to get user profile: $e');
+      return Result.failure('Failed to start download: $e');
     }
   }
 }
 ```
 
-## 📋 Cấu trúc thư mục chuẩn
+### 5. **Sử dụng Result Pattern**
+
+```dart
+// ✅ ĐÚNG
+Future<Result<VideoInfo>> analyzeVideo(String url) async {
+  try {
+    final videoInfo = await _dataSource.analyzeVideo(url);
+    return Result.success(videoInfo);
+  } catch (e) {
+    return Result.failure('Failed to analyze video: $e');
+  }
+}
+```
+
+### 6. **Injectable Annotation**
+
+```dart
+// ✅ ĐÚNG - UseCase
+@injectable
+class AnalyzeVideo {
+  final VideoRepository _repository;
+  AnalyzeVideo({required VideoRepository repository}) : _repository = repository;
+}
+
+// ✅ ĐÚNG - Repository
+@LazySingleton(as: VideoRepository)
+class VideoRepositoryImpl implements VideoRepository {
+  final VideoDataSource _dataSource;
+  VideoRepositoryImpl({required VideoDataSource dataSource}) : _dataSource = dataSource;
+}
+
+// ✅ ĐÚNG - Service
+@lazySingleton
+class YouTubeService {
+  // Implementation
+}
+
+// ✅ ĐÚNG - Cubit
+@injectable
+class VideoAnalysisCubit extends Cubit<VideoAnalysisState> {
+  final AnalyzeVideo _analyzeVideo;
+  VideoAnalysisCubit({required AnalyzeVideo analyzeVideo}) : _analyzeVideo = analyzeVideo;
+}
+```
+
+## 📋 Cấu trúc thư mục
 
 ```
 lib/
-├── core/                           # Core layer - Shared components
+├── core/                           # Shared components
 │   ├── constants/                  # App constants
 │   ├── error/                      # Error handling
 │   ├── utils/                      # Helper functions
 │   ├── services/                   # Platform services
+│   ├── result/                     # Result type
 │   └── dependency_injection/       # DI setup
 │
-├── domain/                         # Domain layer - Business logic
-│   ├── entities/                   # Business entities
+├── domain/                         # Business logic
+│   ├── entities/                   # Business entities (BẮT BUỘC Freezed)
 │   ├── repositories/               # Repository interfaces
 │   ├── usecases/                   # Business use cases
 │   └── value_objects/              # Value objects
 │
-├── data/                           # Data layer - External data sources
-│   ├── models/                     # Data models (kế thừa từ entities)
+├── data/                           # External data sources
+│   ├── models/                     # Data models (typedef hoặc kế thừa entities)
 │   ├── datasources/                # Data sources
 │   └── repositories/               # Repository implementations
 │
-└── presentation/                   # Presentation layer - UI
-    ├── bloc/                       # State management
+└── presentation/                   # UI
+    ├── bloc/                       # State management (Cubit/Bloc)
     ├── pages/                      # Page widgets
     ├── widgets/                    # Reusable widgets
-    ├── theme/                      # Theme configuration
-    └── routes/                     # Route management
+    └── theme/                      # Theme configuration
 ```
 
 ## 🔄 Dependency Flow
@@ -119,196 +150,73 @@ Presentation Layer → Domain Layer ← Data Layer
    UI Components    Business Logic   External Data
 ```
 
-## 📝 Quy trình tạo feature mới
+## 📝 Quy trình tạo feature
 
 ### Bước 1: Domain Layer
 
-1. Tạo Entity trong `lib/domain/entities/`
-2. Tạo Repository interface trong `lib/domain/repositories/`
-3. Tạo UseCase trong `lib/domain/usecases/`
+1. Tạo Entity **VỚI FREEDZED** (bắt buộc)
+2. Tạo Repository interface
+3. Tạo UseCase
 
 ### Bước 2: Data Layer
 
-1. Tạo Model kế thừa Entity trong `lib/data/models/`
-2. Tạo DataSource trong `lib/data/datasources/`
-3. Tạo Repository implementation trong `lib/data/repositories/`
+1. Tạo Model (typedef hoặc kế thừa Entity)
+2. Tạo DataSource
+3. Tạo Repository implementation
 
 ### Bước 3: Presentation Layer
 
-1. Tạo Cubit/Bloc trong `lib/presentation/bloc/`
-2. Tạo UI components trong `lib/presentation/widgets/`
-3. Tạo Pages trong `lib/presentation/pages/`
+1. Tạo Cubit/Bloc
+2. Tạo UI components
+3. Tạo Pages
 
 ### Bước 4: Dependency Injection
 
-1. Đăng ký dependencies trong `lib/core/dependency_injection/`
+1. Đăng ký dependencies
+2. Chạy `flutter pub run build_runner build --delete-conflicting-outputs`
 
 ## 🔍 Code Review Checklist
 
 - [ ] **Domain layer không phụ thuộc framework**
+- [ ] **Entity BẮT BUỘC sử dụng Freezed**
 - [ ] **Cubit chỉ sử dụng UseCases**
-- [ ] **Model kế thừa Entity**
+- [ ] **Model sử dụng typedef hoặc kế thừa Entity**
 - [ ] **Repository trả về trực tiếp từ DataSource**
+- [ ] **Sử dụng Result pattern cho error handling**
+- [ ] **Injectable annotation đúng cách**
 - [ ] **Dependency injection đã đăng ký đầy đủ**
 - [ ] **Import đúng layer**
+- [ ] **Sử dụng developer.log thay vì print/debugPrint**
 
-## 📚 References
-
-- [lib/domain/entities/](mdc:lib/domain/entities/) - Business entities
-- [lib/domain/repositories/](mdc:lib/domain/repositories/) - Repository interfaces
-- [lib/domain/usecases/](mdc:lib/domain/usecases/) - Business use cases
-- [lib/data/models/](mdc:lib/data/models/) - Data models
-- [lib/presentation/bloc/](mdc:lib/presentation/bloc/) - State management
-
-# 🏗️ Flutter Clean Architecture Rules
-
-## 🚨 Quy tắc nghiêm ngặt - KHÔNG VI PHẠM
-
-### 1. **KHÔNG BAO GIỜ truy cập trực tiếp Service từ Cubit/Bloc**
+## 🔧 Logging Rules
 
 ```dart
-// ❌ VI PHẠM - Cubit import và sử dụng trực tiếp Service
-import '../../../core/services/api_service.dart';
+// ❌ VI PHẠM
+print('Download started');
+debugPrint('Download progress: $progress');
 
-class UserCubit extends Cubit<UserState> {
-  final ApiService _apiService; // ❌ Truy cập trực tiếp service
-```
-
-```dart
-// ✅ ĐÚNG - Cubit chỉ sử dụng UseCases
-import '../../../domain/usecases/user/get_user_profile.dart';
-
-class UserCubit extends Cubit<UserState> {
-  final GetUserProfile _getUserProfile; // ✅ Sử dụng usecase
-```
-
-### 2. **BẮT BUỘC có Domain Layer cho mọi feature**
-
-- ✅ Tạo Entity trong `lib/domain/entities/`
-- ✅ Tạo Repository interface trong `lib/domain/repositories/`
-- ✅ Tạo UseCase trong `lib/domain/usecases/`
-- ❌ KHÔNG định nghĩa business logic trong Service
-
-### 3. **Model phải kế thừa từ Entity**
-
-```dart
 // ✅ ĐÚNG
-class UserModel extends User {
-  const UserModel({
-    required super.id,
-    required super.name,
-    required super.email,
-  });
-
-  factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      email: Email(map['email'] ?? ''),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email.value,
-    };
-  }
-}
+import 'dart:developer' as developer;
+developer.log('[file_name.dart] - Download started');
+developer.log('[file_name.dart] - Download progress: $progress');
 ```
 
-### 4. **Repository Implementation trả về trực tiếp từ DataSource**
+## 🎯 Injectable Rules
 
-```dart
-// ✅ ĐÚNG - Trả về trực tiếp từ DataSource
-class UserRepositoryImpl implements UserRepository {
-  final UserDataSource _dataSource;
+### Áp dụng annotation
 
-  UserRepositoryImpl({required UserDataSource dataSource})
-      : _dataSource = dataSource;
+- **UseCase:** `@injectable`
+- **Repository:** `@LazySingleton(as: XxxRepository)`
+- **DataSource:** `@lazySingleton`
+- **Service:** `@lazySingleton`
+- **Cubit:** `@injectable`
 
-  @override
-  Future<User> getUserProfile(String userId) async {
-    try {
-      return await _dataSource.getUser(userId); // Trả về trực tiếp
-    } catch (e) {
-      throw Exception('Failed to get user profile: $e');
-    }
-  }
-}
-```
+### Không áp dụng
 
-## 📋 Cấu trúc thư mục chuẩn
-
-```
-lib/
-├── core/                           # Core layer - Shared components
-│   ├── constants/                  # App constants
-│   ├── error/                      # Error handling
-│   ├── utils/                      # Helper functions
-│   ├── services/                   # Platform services
-│   └── dependency_injection/       # DI setup
-│
-├── domain/                         # Domain layer - Business logic
-│   ├── entities/                   # Business entities
-│   ├── repositories/               # Repository interfaces
-│   ├── usecases/                   # Business use cases
-│   └── value_objects/              # Value objects
-│
-├── data/                           # Data layer - External data sources
-│   ├── models/                     # Data models (kế thừa từ entities)
-│   ├── datasources/                # Data sources
-│   └── repositories/               # Repository implementations
-│
-└── presentation/                   # Presentation layer - UI
-    ├── bloc/                       # State management
-    ├── pages/                      # Page widgets
-    ├── widgets/                    # Reusable widgets
-    ├── theme/                      # Theme configuration
-    └── routes/                     # Route management
-```
-
-## 🔄 Dependency Flow
-
-```
-Presentation Layer → Domain Layer ← Data Layer
-       ↓                    ↑              ↑
-   UI Components    Business Logic   External Data
-```
-
-## 📝 Quy trình tạo feature mới
-
-### Bước 1: Domain Layer
-
-1. Tạo Entity trong `lib/domain/entities/`
-2. Tạo Repository interface trong `lib/domain/repositories/`
-3. Tạo UseCase trong `lib/domain/usecases/`
-
-### Bước 2: Data Layer
-
-1. Tạo Model kế thừa Entity trong `lib/data/models/`
-2. Tạo DataSource trong `lib/data/datasources/`
-3. Tạo Repository implementation trong `lib/data/repositories/`
-
-### Bước 3: Presentation Layer
-
-1. Tạo Cubit/Bloc trong `lib/presentation/bloc/`
-2. Tạo UI components trong `lib/presentation/widgets/`
-3. Tạo Pages trong `lib/presentation/pages/`
-
-### Bước 4: Dependency Injection
-
-1. Đăng ký dependencies trong `lib/core/dependency_injection/`
-
-## 🔍 Code Review Checklist
-
-- [ ] **Domain layer không phụ thuộc framework**
-- [ ] **Cubit chỉ sử dụng UseCases**
-- [ ] **Model kế thừa Entity**
-- [ ] **Repository trả về trực tiếp từ DataSource**
-- [ ] **Dependency injection đã đăng ký đầy đủ**
-- [ ] **Import đúng layer**
+- **Entity:** Lớp dữ liệu thuần với Freezed
+- **Model:** Typedef hoặc kế thừa entity
+- **Constant:** Static fields
+- **Widget/Page:** UI components
 
 ## 📚 References
 

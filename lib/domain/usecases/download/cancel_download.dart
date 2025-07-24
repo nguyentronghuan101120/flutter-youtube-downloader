@@ -1,21 +1,23 @@
 import 'package:injectable/injectable.dart';
-import '../../entities/download_task.dart';
 import '../../repositories/download_repository.dart';
-import '../../../core/usecases/base_usecase.dart';
 import '../../../core/result/result.dart';
+import '../../../core/usecases/base_usecase.dart';
 
 @injectable
-class CancelDownloadUseCase
-    implements BaseUseCase<Result<DownloadTask>, String> {
-  final DownloadRepository _downloadRepository;
+class CancelDownload implements BaseUseCase<Result<void>, String> {
+  final DownloadRepository repository;
 
-  const CancelDownloadUseCase({required DownloadRepository downloadRepository})
-    : _downloadRepository = downloadRepository;
+  CancelDownload(this.repository);
 
   @override
-  Future<Result<DownloadTask>> execute(String taskId) async {
+  Future<Result<void>> execute(String downloadId) async {
     try {
-      return await _downloadRepository.cancelDownload(taskId);
+      final result = await repository.cancelDownload(downloadId);
+      if (result.isSuccess) {
+        return const Result.success(null);
+      } else {
+        return Result.failure(result.errorMessage!);
+      }
     } catch (e) {
       return Result.failure('Failed to cancel download: $e');
     }

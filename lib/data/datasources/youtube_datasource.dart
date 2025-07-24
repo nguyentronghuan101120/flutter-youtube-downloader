@@ -1,6 +1,9 @@
 import 'package:injectable/injectable.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'dart:developer' as developer;
 import '../../domain/entities/video_info.dart';
+import '../../domain/entities/video_stream.dart';
+import '../../domain/entities/audio_stream.dart';
 
 @lazySingleton
 class YouTubeDataSource {
@@ -23,11 +26,83 @@ class YouTubeDataSource {
 
       // Get video details
       final video = await _yt.videos.get(videoId);
-      // final manifest = await _yt.videos.streamsClient.getManifest(videoId);
 
-      // Get video streams (for future use)
-      // final videoStreams = manifest.muxed;
-      // final audioStreams = manifest.audioOnly;
+      // Get video streams
+      final manifest = await _yt.videos.streamsClient.getManifest(videoId);
+
+      // Debug: Print manifest info
+      developer.log(
+        '[youtube_datasource.dart] - Manifest muxed streams: ${manifest.muxed.length}',
+      );
+      developer.log(
+        '[youtube_datasource.dart] - Manifest audio streams: ${manifest.audioOnly.length}',
+      );
+
+      // Convert streams to our domain entities (simplified for now)
+      final videoStreams = <VideoStream>[];
+      final audioStreams = <AudioStream>[];
+
+      // Always create mock streams for testing
+      videoStreams.add(
+        VideoStream(
+          url: 'https://example.com/video.mp4',
+          format: 'mp4',
+          quality: '720p',
+          width: 1280,
+          height: 720,
+          bitrate: 1000000,
+          fileSize: 50000000, // 50MB
+          codec: 'h264',
+          resolution: '1280x720',
+          fps: 30,
+        ),
+      );
+
+      videoStreams.add(
+        VideoStream(
+          url: 'https://example.com/video.mp4',
+          format: 'mp4',
+          quality: '480p',
+          width: 854,
+          height: 480,
+          bitrate: 500000,
+          fileSize: 25000000, // 25MB
+          codec: 'h264',
+          resolution: '854x480',
+          fps: 30,
+        ),
+      );
+
+      audioStreams.add(
+        AudioStream(
+          url: 'https://example.com/audio.mp3',
+          format: 'mp3',
+          bitrate: 128000,
+          fileSize: 10000000, // 10MB
+          codec: 'mp3',
+          channels: 2,
+          sampleRate: 44100,
+        ),
+      );
+
+      audioStreams.add(
+        AudioStream(
+          url: 'https://example.com/audio.mp3',
+          format: 'mp3',
+          bitrate: 320000,
+          fileSize: 25000000, // 25MB
+          codec: 'mp3',
+          channels: 2,
+          sampleRate: 44100,
+        ),
+      );
+
+      developer.log(
+        '[youtube_datasource.dart] - Created video streams: ${videoStreams.length}',
+      );
+      developer.log(
+        '[youtube_datasource.dart] - Created audio streams: ${audioStreams.length}',
+      );
 
       // Create VideoInfo entity
       final videoInfo = VideoInfo(
@@ -37,6 +112,8 @@ class YouTubeDataSource {
         duration: video.duration ?? Duration.zero,
         thumbnailUrl: _getBestThumbnailUrl(videoId),
         formats: [], // TODO: Implement formats extraction
+        videoStreams: videoStreams,
+        audioStreams: audioStreams,
         description: video.description,
         uploadDate: video.uploadDate ?? DateTime.now(),
         viewCount: video.engagement.viewCount,

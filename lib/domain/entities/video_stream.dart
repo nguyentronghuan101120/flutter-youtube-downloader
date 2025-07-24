@@ -14,6 +14,8 @@ class VideoStream with _$VideoStream {
     required int bitrate,
     required int fileSize,
     required String codec,
+    required String resolution,
+    required int fps,
   }) = _VideoStream;
 
   factory VideoStream.fromJson(Map<String, dynamic> json) =>

@@ -1,7 +1,10 @@
 import 'package:injectable/injectable.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'dart:developer' as developer;
 import '../../domain/entities/video_info.dart';
 import '../../domain/entities/playlist_info.dart';
+import '../../domain/entities/video_stream.dart';
+import '../../domain/entities/audio_stream.dart';
 
 @lazySingleton
 class YouTubeService {
@@ -30,6 +33,93 @@ class YouTubeService {
 
         final video = await _yt.videos.get(videoId);
 
+        // Get video streams manifest
+        final manifest = await _yt.videos.streamsClient.getManifest(videoId);
+
+        // Debug: Print manifest info
+        developer.log(
+          '[youtube_service.dart] - Manifest muxed streams: ${manifest.muxed.length}',
+        );
+        developer.log(
+          '[youtube_service.dart] - Manifest audio streams: ${manifest.audioOnly.length}',
+        );
+        developer.log(
+          '[youtube_service.dart] - Manifest video streams: ${manifest.videoOnly.length}',
+        );
+
+        // Convert real streams to our domain entities
+        final videoStreams = <VideoStream>[];
+        final audioStreams = <AudioStream>[];
+
+        // Process video-only streams
+        for (final stream in manifest.videoOnly) {
+          videoStreams.add(
+            VideoStream(
+              url: stream.url.toString(),
+              format: stream.container.name,
+              quality: stream.videoQuality.qualityString,
+              width: _getVideoWidth(stream.videoQuality),
+              height: _getVideoHeight(stream.videoQuality),
+              bitrate: stream.bitrate.bitsPerSecond,
+              fileSize: _estimateFileSize(
+                stream.bitrate.bitsPerSecond,
+                video.duration,
+              ),
+              codec: stream.videoCodec.toString(),
+              resolution:
+                  '${_getVideoWidth(stream.videoQuality)}x${_getVideoHeight(stream.videoQuality)}',
+              fps: _getVideoFps(stream.videoQuality),
+            ),
+          );
+        }
+
+        // Process audio-only streams
+        for (final stream in manifest.audioOnly) {
+          audioStreams.add(
+            AudioStream(
+              url: stream.url.toString(),
+              format: stream.container.name,
+              bitrate: stream.bitrate.bitsPerSecond,
+              fileSize: _estimateFileSize(
+                stream.bitrate.bitsPerSecond,
+                video.duration,
+              ),
+              codec: stream.audioCodec.toString(),
+              channels: _getAudioChannels(stream.audioCodec.toString()),
+              sampleRate: _getAudioSampleRate(stream.audioCodec.toString()),
+            ),
+          );
+        }
+
+        // Add muxed streams (video + audio) as video streams
+        for (final stream in manifest.muxed) {
+          videoStreams.add(
+            VideoStream(
+              url: stream.url.toString(),
+              format: stream.container.name,
+              quality: stream.videoQuality.qualityString,
+              width: _getVideoWidth(stream.videoQuality),
+              height: _getVideoHeight(stream.videoQuality),
+              bitrate: stream.bitrate.bitsPerSecond,
+              fileSize: _estimateFileSize(
+                stream.bitrate.bitsPerSecond,
+                video.duration,
+              ),
+              codec: stream.videoCodec.toString(),
+              resolution:
+                  '${_getVideoWidth(stream.videoQuality)}x${_getVideoHeight(stream.videoQuality)}',
+              fps: _getVideoFps(stream.videoQuality),
+            ),
+          );
+        }
+
+        developer.log(
+          '[youtube_service.dart] - Created video streams: ${videoStreams.length}',
+        );
+        developer.log(
+          '[youtube_service.dart] - Created audio streams: ${audioStreams.length}',
+        );
+
         return VideoInfo(
           id: video.id.value,
           title: video.title,
@@ -37,6 +127,13 @@ class YouTubeService {
           duration: video.duration ?? Duration.zero,
           thumbnailUrl: _getBestThumbnailUrl(videoId),
           formats: [], // Empty formats list for now
+          videoStreams: videoStreams,
+          audioStreams: audioStreams,
+          description: video.description,
+          uploadDate: video.uploadDate ?? DateTime.now(),
+          viewCount: video.engagement.viewCount,
+          tags: video.keywords.toList(),
+          url: url,
         );
       } catch (e) {
         if (attempt == _maxRetries) {
@@ -228,6 +325,75 @@ class YouTubeService {
       }
     }
     return null;
+  }
+
+  /// Get video width based on quality
+  int _getVideoWidth(VideoQuality quality) {
+    return switch (quality) {
+      VideoQuality.low144 => 256,
+      VideoQuality.low240 => 426,
+      VideoQuality.medium360 => 640,
+      VideoQuality.medium480 => 854,
+      VideoQuality.high720 => 1280,
+      VideoQuality.high1080 => 1920,
+      VideoQuality.high1440 => 2560,
+      VideoQuality.high2160 => 3840,
+      VideoQuality.high2880 => 5120,
+      VideoQuality.high3072 => 5464,
+      VideoQuality.high4320 => 7680,
+      VideoQuality.unknown => 640,
+    };
+  }
+
+  /// Get video height based on quality
+  int _getVideoHeight(VideoQuality quality) {
+    return switch (quality) {
+      VideoQuality.low144 => 144,
+      VideoQuality.low240 => 240,
+      VideoQuality.medium360 => 360,
+      VideoQuality.medium480 => 480,
+      VideoQuality.high720 => 720,
+      VideoQuality.high1080 => 1080,
+      VideoQuality.high1440 => 1440,
+      VideoQuality.high2160 => 2160,
+      VideoQuality.high2880 => 2880,
+      VideoQuality.high3072 => 3072,
+      VideoQuality.high4320 => 4320,
+      VideoQuality.unknown => 360,
+    };
+  }
+
+  /// Get video FPS based on quality (default to 30fps)
+  int _getVideoFps(VideoQuality quality) {
+    // Most YouTube videos are 30fps, some are 60fps for higher qualities
+    return switch (quality) {
+      VideoQuality.high1080 ||
+      VideoQuality.high1440 ||
+      VideoQuality.high2160 ||
+      VideoQuality.high2880 ||
+      VideoQuality.high3072 ||
+      VideoQuality.high4320 => 60,
+      _ => 30,
+    };
+  }
+
+  /// Get audio channels (default to 2 for stereo)
+  int _getAudioChannels(String codec) {
+    // Most YouTube audio is stereo (2 channels)
+    return 2;
+  }
+
+  /// Get audio sample rate (default to 44100Hz)
+  int _getAudioSampleRate(String codec) {
+    // Most YouTube audio is 44.1kHz
+    return 44100;
+  }
+
+  /// Estimates file size based on bitrate and duration
+  int _estimateFileSize(int bitrate, Duration? duration) {
+    final durationInSeconds = duration?.inSeconds ?? 0;
+    final sizeInBits = bitrate * durationInSeconds;
+    return (sizeInBits / 8).round(); // Convert bits to bytes
   }
 
   /// Disposes the YouTube client

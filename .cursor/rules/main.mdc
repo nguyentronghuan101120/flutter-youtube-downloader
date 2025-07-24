@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+---
+
+- Không được dùng print hay debugPrint, chỉ được phép dùng dart:developer và developer.log để log
+- Log theo cấu trúc sau "[file_name] - message"

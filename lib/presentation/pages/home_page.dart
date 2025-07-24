@@ -4,7 +4,9 @@ import '../bloc/video_analysis/video_analysis_cubit.dart';
 import '../bloc/video_analysis/video_analysis_state.dart';
 import '../widgets/url_input_widget.dart';
 import '../widgets/video_info_widget.dart';
-import 'video_analysis_page.dart';
+import '../widgets/download_path_widget.dart';
+import 'download_page.dart';
+import '../../domain/entities/video_info.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -15,107 +17,182 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('YouTube Downloader'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.analytics),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const VideoAnalysisPage(),
+      ),
+      body: BlocListener<VideoAnalysisCubit, VideoAnalysisState>(
+        listener: (context, state) {
+          state.when(
+            initial: () {},
+            loading: (lastAnalyzedUrl) {},
+            success: (videoInfo, lastAnalyzedUrl) {
+              // Show download option when video analysis is successful
+              _showDownloadOption(context, videoInfo);
+            },
+            error: (message, lastAnalyzedUrl) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(message),
+                  backgroundColor: Theme.of(context).colorScheme.error,
                 ),
               );
             },
-            tooltip: 'Video Analysis',
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // URL Input Widget
-            BlocBuilder<VideoAnalysisCubit, VideoAnalysisState>(
-              builder: (context, state) {
-                return UrlInputWidget(
+          );
+        },
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                UrlInputWidget(
                   onUrlSubmitted: (url) {
                     context.read<VideoAnalysisCubit>().analyzeVideo(url);
                   },
-                  isLoading: state.isLoading,
-                  errorMessage: state.errorMessage,
-                );
-              },
+                ),
+                const SizedBox(height: 24),
+                const DownloadPathWidget(),
+                const SizedBox(height: 24),
+                BlocBuilder<VideoAnalysisCubit, VideoAnalysisState>(
+                  builder: (context, state) {
+                    return state.when(
+                      initial: () => _buildInitialState(context),
+                      loading: (lastAnalyzedUrl) => _buildLoadingState(),
+                      success: (videoInfo, lastAnalyzedUrl) =>
+                          _buildSuccessState(context, videoInfo),
+                      error: (message, lastAnalyzedUrl) =>
+                          _buildErrorState(context, message),
+                    );
+                  },
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
 
-            const SizedBox(height: 20),
+  Widget _buildInitialState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.download,
+            size: 64,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Enter YouTube URL to start',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Paste a YouTube video URL above to analyze and download',
+            style: Theme.of(context).textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Video Analysis Results
-            Expanded(
-              child: BlocBuilder<VideoAnalysisCubit, VideoAnalysisState>(
-                builder: (context, state) {
-                  if (state.isLoading) {
-                    return const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text('Analyzing video...'),
-                        ],
-                      ),
-                    );
-                  } else if (state.isSuccess && state.hasVideoInfo) {
-                    return VideoInfoWidget(videoInfo: state.videoInfo!);
-                  } else if (state.isError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 64,
-                            color: Colors.red,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            state.errorMessage ?? 'An error occurred',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              context.read<VideoAnalysisCubit>().retry();
-                            },
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    );
-                  } else {
-                    return const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.video_library,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Enter a YouTube URL to analyze',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Analyzing video...'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccessState(BuildContext context, VideoInfo videoInfo) {
+    return Column(
+      children: [
+        VideoInfoWidget(videoInfo: videoInfo),
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
+          onPressed: () => _navigateToDownload(context, videoInfo),
+          icon: const Icon(Icons.download),
+          label: const Text('Download Video'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error,
+            size: 64,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(height: 16),
+          Text('Error', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDownloadOption(BuildContext context, VideoInfo videoInfo) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Video analyzed successfully!',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _navigateToDownload(context, videoInfo);
                 },
+                icon: const Icon(Icons.download),
+                label: const Text('Download Video'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _navigateToDownload(BuildContext context, VideoInfo videoInfo) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DownloadPage(videoInfo: videoInfo),
       ),
     );
   }

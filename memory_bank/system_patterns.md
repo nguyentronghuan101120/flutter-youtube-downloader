@@ -2,203 +2,278 @@
 
 ## 🏗️ Architecture Patterns
 
-### Clean Architecture
+### Clean Architecture Implementation
 
-- **Domain Layer** - Business logic, entities, use cases
-- **Data Layer** - External data sources, repositories
-- **Presentation Layer** - UI, state management
+- **Domain Layer** - Pure business logic, no framework dependencies
+- **Data Layer** - External data sources và repository implementations
+- **Presentation Layer** - UI và state management
 - **Core Layer** - Shared services, DI, error handling
 
-### Data Flow
+### Dependency Flow
 
 ```
-UI → Cubit → UseCase → Repository → DataSource → External API/File System
+Presentation → Domain ← Data
+     ↓           ↑        ↑
+   UI Components Business Logic External Data
 ```
 
-## 📁 File Structure
+## 🔧 Core Patterns
 
-### Domain Layer
+### Result Pattern
 
-- `entities/` - Business entities với Freezed
-- `repositories/` - Repository interfaces
-- `usecases/` - Business logic
+- **Result<T>** type cho error handling
+- Success/Failure states
+- Consistent error handling across layers
 
-### Data Layer
+### Repository Pattern
 
-- `models/` - Data models kế thừa entities
-- `datasources/` - External data access
-- `repositories/` - Repository implementations
+- **Interface** trong domain layer
+- **Implementation** trong data layer
+- **Dependency injection** với GetIt
 
-### Presentation Layer
+### Use Case Pattern
 
-- `bloc/` - State management với flutter_bloc
-- `pages/` - Page widgets
-- `widgets/` - Reusable UI components
+- **Single responsibility** - Mỗi use case một chức năng
+- **Dependency injection** - Inject repositories
+- **Result type** - Consistent error handling
 
-### Core Layer
+## 📱 State Management
 
-- `services/` - Shared services
-- `dependency_injection/` - DI setup
-- `error/` - Error handling
-- `constants/` - App constants
+### Bloc/Cubit Pattern
 
-## 🎯 Design Patterns
-
-### Dependency Injection
-
-- **GetIt** - Service locator
-- **Injectable** - Code generation
-- **@LazySingleton** - Repository implementations
-- **@injectable** - Use cases và services
-
-### State Management
-
-- **flutter_bloc** - BLoC pattern
-- **Cubit** - Simplified state management
-- **Equatable** - Value equality
-
-### Data Classes
-
-- **Freezed** - Immutable data classes
-- **JSON serialization** - Data persistence
-- **Code generation** - build_runner
-
-## 🔧 Technical Patterns
-
-### Error Handling
-
-- **Result type** - Functional error handling
-- **Exception classes** - Custom error types
-- **User-friendly messages** - Error display
-
-### API Integration
-
-- **Rate limiting** - YouTube API protection
-- **Retry mechanism** - Network resilience
-- **Caching** - Performance optimization
-
-### File Management
-
-- **Path provider** - Cross-platform file paths
-- **Permission handling** - Storage access
-- **Progress tracking** - Download monitoring
-
-## 📊 Architecture Rules
-
-### Domain Layer
-
-- Không phụ thuộc framework
-- Pure business logic
-- Immutable entities
-- Repository interfaces
-
-### Data Layer
-
-- Implement domain interfaces
-- Handle external data sources
-- Model kế thừa Entity
-- Repository trả về trực tiếp từ DataSource
-
-### Presentation Layer
-
-- Chỉ import domain layer
-- Cubit chỉ sử dụng UseCases
-- UI components reusable
-- State management centralized
-
-### Core Layer
-
-- Shared across layers
-- Platform services
-- Error handling utilities
-- Dependency injection setup
-
-## 🔄 State Management
-
-### Cubit Structure
-
-```dart
-@injectable
-class FeatureCubit extends Cubit<FeatureState> {
-  final UseCase _useCase;
-  // Implementation
-}
-```
+- **DownloadCubit** - Download state management
+- **VideoAnalysisCubit** - Video analysis state
+- **PreferencesCubit** - User preferences state
 
 ### State Classes
 
-```dart
-@freezed
-class FeatureState with _$FeatureState {
-  const factory FeatureState.initial() = _Initial;
-  const factory FeatureState.loading() = _Loading;
-  const factory FeatureState.success(Data data) = _Success;
-  const factory FeatureState.error(String message) = _Error;
-}
+- **Freezed** cho immutable states
+- **CopyWith** cho state updates
+- **Equatable** cho state comparison
+
+## 🔄 Data Flow Patterns
+
+### Video Analysis Flow
+
+```
+URL Input → VideoAnalysisCubit → AnalyzeVideoUseCase → VideoRepository → YouTubeService
 ```
 
-## 🎨 UI Patterns
+### Download Flow
+
+```
+Format Selection → DownloadCubit → StartDownloadUseCase → DownloadRepository → DownloadService
+```
+
+### Audio Conversion Flow
+
+```
+Download Complete → AudioConversionService → FFmpeg → Output Files
+```
+
+## 📁 File Organization
+
+### Layer-based Structure
+
+```
+lib/
+├── core/           # Shared services, DI, utilities
+├── domain/         # Business logic, entities, use cases
+├── data/           # External data, repositories, models
+└── presentation/   # UI, state management, widgets
+```
+
+### Feature-based Organization
+
+- **Download** - Download-related components
+- **Video Analysis** - Video analysis components
+- **Audio Conversion** - Audio processing components
+- **Storage** - File management components
+
+## 🔧 Service Patterns
+
+### YouTube Service
+
+- **Rate limiting** - Prevent API abuse
+- **Retry mechanism** - Handle transient failures
+- **Stream selection** - Find appropriate video/audio streams
+- **Error handling** - YouTube-specific exceptions
+
+### Download Service
+
+- **Progress tracking** - Real-time progress updates
+- **Stream selection** - Video/audio stream matching
+- **File management** - Safe file naming và paths
+- **Platform adaptation** - Android/iOS specific paths
+
+### Audio Conversion Service
+
+- **FFmpeg integration** - Native FFmpeg support
+- **Multiple formats** - MP3, AAC, OGG, WAV, FLAC
+- **Quality options** - Configurable bitrates
+- **Error handling** - FFmpeg error handling
+
+### Storage Repository
+
+- **Platform paths** - Android/iOS specific directories
+- **Permission handling** - Storage permissions
+- **File operations** - Create, move, delete files
+- **Space management** - Available space checking
+
+## 🎯 UI Patterns
 
 ### Material Design 3
 
-- Dynamic color scheme
-- Responsive layout
-- Accessibility support
-- Dark/light theme
+- **Dynamic color scheme** - Theme-based colors
+- **Responsive layout** - Adaptive UI
+- **Accessibility** - Screen reader support
 
-### Widget Structure
+### Widget Patterns
 
-- **Pages** - Full screen views
-- **Widgets** - Reusable components
-- **BlocBuilder** - State-aware UI
-- **Error handling** - User-friendly messages
+- **Stateless widgets** - Pure UI components
+- **Stateful widgets** - Local state management
+- **Custom widgets** - Reusable components
 
-## 📱 Platform Support
+### Error Handling UI
 
-### Cross-platform
+- **Error states** - User-friendly error messages
+- **Retry mechanisms** - Automatic retry options
+- **Loading states** - Progress indicators
 
-- **Android** - Native performance
-- **iOS** - iOS guidelines compliance
-- **Web** - Progressive web app
-- **Desktop** - Native desktop apps
+## 🔧 Dependency Injection
 
-### Platform-specific
+### Injectable Pattern
 
-- **File paths** - path_provider
-- **Permissions** - permission_handler
-- **Storage** - sqflite, shared_preferences
-- **Media** - ffmpeg_kit_flutter_new
+- **@injectable** - Regular dependencies
+- **@LazySingleton** - Singleton dependencies
+- **@factoryMethod** - Factory methods
 
-## 🔒 Security
+### GetIt Configuration
 
-### Input Validation
+- **External modules** - Third-party dependencies
+- **Service registration** - Core services
+- **Repository binding** - Interface to implementation
 
-- **URL validation** - Regex patterns
-- **Data sanitization** - XSS prevention
-- **Permission checks** - Storage access
+## 📊 Data Patterns
 
-### Network Security
+### Entity Patterns
 
-- **HTTPS enforcement** - Secure connections
-- **Rate limiting** - API protection
-- **Error handling** - No sensitive data exposure
+- **Freezed** - Immutable data classes
+- **JSON serialization** - API data mapping
+- **Value objects** - Domain-specific types
 
-## 📈 Performance
+### Model Patterns
 
-### Code Generation
+- **Entity inheritance** - Models extend entities
+- **JSON mapping** - API response mapping
+- **Validation** - Data validation
 
-- **build_runner** - Freezed, Injectable
-- **Compile-time optimization** - Type safety
-- **Reduced boilerplate** - Maintainable code
+## 🔄 Async Patterns
+
+### Future/Async-Await
+
+- **Non-blocking operations** - UI responsiveness
+- **Error handling** - Try-catch blocks
+- **Progress tracking** - Callback functions
+
+### Stream Patterns
+
+- **Progress streams** - Real-time updates
+- **Download progress** - Percentage updates
+- **Error streams** - Error propagation
+
+## 🔧 Error Handling
+
+### Result Pattern
+
+- **Success/Failure states** - Explicit error handling
+- **Error messages** - User-friendly messages
+- **Error propagation** - Layer-to-layer error passing
+
+### Exception Handling
+
+- **YouTube exceptions** - Video unavailable, private, etc.
+- **Network exceptions** - Connection failures
+- **File exceptions** - Storage errors
+
+## 📱 Platform Patterns
+
+### Android Patterns
+
+- **Storage permissions** - External storage access
+- **Download directory** - System Downloads folder
+- **File paths** - Android-specific paths
+
+### iOS Patterns
+
+- **App documents** - App-specific storage
+- **File sharing** - iTunes file sharing
+- **Permission handling** - iOS file access
+
+### Cross-platform Patterns
+
+- **Platform detection** - Platform-specific code
+- **Path handling** - Platform-specific paths
+- **Permission handling** - Platform-specific permissions
+
+## 🔧 Testing Patterns
+
+### Unit Testing
+
+- **Use case testing** - Business logic testing
+- **Repository testing** - Data layer testing
+- **Service testing** - Core services testing
+
+### Widget Testing
+
+- **UI component testing** - Widget behavior testing
+- **State testing** - State management testing
+- **Integration testing** - End-to-end testing
+
+## 📊 Performance Patterns
 
 ### Memory Management
 
-- **Lazy loading** - On-demand resources
-- **Caching** - Network responses
-- **Garbage collection** - Automatic cleanup
+- **Stream disposal** - Proper resource cleanup
+- **Image caching** - Network image caching
+- **File cleanup** - Temporary file removal
 
-### UI Performance
+### Network Optimization
 
-- **const constructors** - Widget optimization
-- **ListView.builder** - Efficient scrolling
-- **Image caching** - Network images
+- **Rate limiting** - API call throttling
+- **Caching** - Response caching
+- **Retry logic** - Automatic retry mechanisms
+
+## 🔧 Security Patterns
+
+### Input Validation
+
+- **URL validation** - YouTube URL patterns
+- **File validation** - Safe file naming
+- **Data sanitization** - Input cleaning
+
+### File Security
+
+- **Safe file paths** - Path traversal prevention
+- **Permission checking** - Storage permissions
+- **File access control** - Secure file operations
+
+## 🎯 Code Quality Patterns
+
+### Naming Conventions
+
+- **Descriptive names** - Clear variable/function names
+- **Consistent naming** - Consistent naming patterns
+- **Domain language** - Business terminology
+
+### Code Organization
+
+- **Single responsibility** - One class, one purpose
+- **Dependency inversion** - Depend on abstractions
+- **Interface segregation** - Small, focused interfaces
+
+### Documentation
+
+- **API documentation** - Function documentation
+- **Code comments** - Complex logic explanation
+- **README files** - Project documentation

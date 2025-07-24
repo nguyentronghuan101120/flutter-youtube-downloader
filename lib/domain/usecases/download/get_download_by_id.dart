@@ -1,26 +1,26 @@
 import 'package:injectable/injectable.dart';
 import '../../entities/download_task.dart';
 import '../../repositories/download_repository.dart';
-import '../../../core/error/failures.dart';
-import '../../../core/result/result.dart' as result;
-import 'package:dartz/dartz.dart';
+import '../../../core/result/result.dart';
+import '../../../core/usecases/base_usecase.dart';
 
 @injectable
-class GetDownloadById {
+class GetDownloadById implements BaseUseCase<Result<DownloadTask>, String> {
   final DownloadRepository repository;
 
   GetDownloadById(this.repository);
 
-  Future<Either<Failure, DownloadTask?>> call(String taskId) async {
+  @override
+  Future<Result<DownloadTask>> execute(String downloadId) async {
     try {
-      final result = await repository.getDownloadById(taskId);
+      final result = await repository.getDownloadById(downloadId);
       if (result.isSuccess) {
-        return Right(result.data);
+        return Result.success(result.data!);
       } else {
-        return Left(CacheFailure(result.errorMessage!));
+        return Result.failure(result.errorMessage!);
       }
     } catch (e) {
-      return Left(CacheFailure(e.toString()));
+      return Result.failure('Failed to get download by ID: $e');
     }
   }
 }

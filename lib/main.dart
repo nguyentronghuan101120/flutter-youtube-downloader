@@ -5,6 +5,7 @@ import 'core/dependency_injection/injection.dart';
 import 'presentation/bloc/video_analysis/video_analysis_cubit.dart';
 import 'presentation/bloc/playlist_analysis/playlist_analysis_cubit.dart';
 import 'presentation/bloc/preferences/preferences_cubit.dart';
+import 'presentation/bloc/download/download_cubit.dart';
 import 'presentation/pages/home_page.dart';
 
 void main() async {
@@ -28,6 +29,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<PreferencesCubit>(
           create: (context) => getIt<PreferencesCubit>(),
+        ),
+        BlocProvider<DownloadCubit>(
+          create: (context) => getIt<DownloadCubit>(),
         ),
       ],
       child: MaterialApp(

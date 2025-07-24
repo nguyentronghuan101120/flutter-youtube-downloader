@@ -1,25 +1,25 @@
 import 'package:injectable/injectable.dart';
 import '../../repositories/download_repository.dart';
-import '../../../core/error/failures.dart';
-import '../../../core/result/result.dart' as result;
-import 'package:dartz/dartz.dart';
+import '../../../core/result/result.dart';
+import '../../../core/usecases/base_usecase.dart';
 
 @injectable
-class ReorderDownloadQueue {
+class ReorderDownloadQueue implements BaseUseCase<Result<void>, List<String>> {
   final DownloadRepository repository;
 
   ReorderDownloadQueue(this.repository);
 
-  Future<Either<Failure, void>> call(List<String> taskIds) async {
+  @override
+  Future<Result<void>> execute(List<String> taskIds) async {
     try {
-      final result = await repository.reorderQueue(taskIds);
+      final result = await repository.reorderDownloadQueue(taskIds);
       if (result.isSuccess) {
-        return const Right(null);
+        return const Result.success(null);
       } else {
-        return Left(CacheFailure(result.errorMessage!));
+        return Result.failure(result.errorMessage!);
       }
     } catch (e) {
-      return Left(CacheFailure(e.toString()));
+      return Result.failure('Failed to reorder download queue: $e');
     }
   }
 }

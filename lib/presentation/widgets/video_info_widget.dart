@@ -8,184 +8,155 @@ class VideoInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Thumbnail và thông tin cơ bản
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Thumbnail
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      videoInfo.thumbnailUrl,
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: double.infinity,
-                          height: 200,
-                          color: Colors.grey[300],
-                          child: const Icon(
-                            Icons.video_library,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                        );
-                      },
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Thumbnail và thông tin cơ bản
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    videoInfo.thumbnailUrl,
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: double.infinity,
+                        height: 200,
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.video_library,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 16),
+                ),
+                const SizedBox(height: 16),
 
-                  // Title
-                  Text(
-                    videoInfo.title,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
+                // Title
+                Text(
+                  videoInfo.title,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
 
-                  // Author
-                  Text(
-                    videoInfo.author,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
+                // Author
+                Text(
+                  videoInfo.author,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 8),
 
-                  // Duration và view count
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatDuration(videoInfo.duration),
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.visibility, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatViewCount(videoInfo.viewCount),
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Upload date
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        videoInfo.uploadDate != null
-                            ? _formatUploadDate(videoInfo.uploadDate!)
-                            : 'Unknown date',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Description
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Description',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    videoInfo.description,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    maxLines: 5,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Tags
-          if (videoInfo.tags.isNotEmpty) ...[
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Duration và view count
+                Row(
                   children: [
+                    Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
                     Text(
-                      'Tags',
-                      style: Theme.of(context).textTheme.titleMedium,
+                      _formatDuration(videoInfo.duration),
+                      style: TextStyle(color: Colors.grey[600]),
                     ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: videoInfo.tags.take(10).map((tag) {
-                        return Chip(
-                          label: Text(tag),
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                        );
-                      }).toList(),
+                    const SizedBox(width: 16),
+                    Icon(Icons.visibility, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatViewCount(videoInfo.viewCount),
+                      style: TextStyle(color: Colors.grey[600]),
                     ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
 
-          // Download button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                // TODO: Implement download functionality
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Download functionality coming soon!'),
+                const SizedBox(height: 8),
+
+                // Upload date
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      videoInfo.uploadDate != null
+                          ? _formatUploadDate(videoInfo.uploadDate!)
+                          : 'Unknown date',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Description
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Description',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  videoInfo.description,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Tags
+        if (videoInfo.tags.isNotEmpty) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Tags', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: videoInfo.tags.take(10).map((tag) {
+                      return Chip(
+                        label: Text(tag),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                      );
+                    }).toList(),
                   ),
-                );
-              },
-              icon: const Icon(Icons.download),
-              label: const Text('Download Video'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                ],
               ),
             ),
           ),
+          const SizedBox(height: 16),
         ],
-      ),
+      ],
     );
   }
 

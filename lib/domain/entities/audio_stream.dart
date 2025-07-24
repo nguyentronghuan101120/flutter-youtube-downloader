@@ -11,6 +11,8 @@ class AudioStream with _$AudioStream {
     required int bitrate,
     required int fileSize,
     required String codec,
+    required int channels,
+    required int sampleRate,
   }) = _AudioStream;
 
   factory AudioStream.fromJson(Map<String, dynamic> json) =>

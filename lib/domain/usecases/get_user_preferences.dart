@@ -5,13 +5,14 @@ import '../../core/usecases/base_usecase.dart';
 import '../../core/result/result.dart';
 
 @injectable
-class GetUserPreferences implements BaseUseCase<Result<UserPreferences>, void> {
+class GetUserPreferences
+    implements BaseUseCaseNoParams<Result<UserPreferences>> {
   final PreferencesRepository repository;
 
   GetUserPreferences(this.repository);
 
   @override
-  Future<Result<UserPreferences>> execute(void params) async {
+  Future<Result<UserPreferences>> execute() async {
     try {
       final preferences = await repository.getUserPreferences();
       return Result.success(preferences);

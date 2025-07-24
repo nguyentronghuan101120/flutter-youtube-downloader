@@ -1,21 +1,23 @@
 import 'package:injectable/injectable.dart';
-import '../../entities/download_task.dart';
 import '../../repositories/download_repository.dart';
-import '../../../core/usecases/base_usecase.dart';
 import '../../../core/result/result.dart';
+import '../../../core/usecases/base_usecase.dart';
 
 @injectable
-class PauseDownloadUseCase
-    implements BaseUseCase<Result<DownloadTask>, String> {
-  final DownloadRepository _downloadRepository;
+class PauseDownload implements BaseUseCase<Result<void>, String> {
+  final DownloadRepository repository;
 
-  const PauseDownloadUseCase({required DownloadRepository downloadRepository})
-    : _downloadRepository = downloadRepository;
+  PauseDownload(this.repository);
 
   @override
-  Future<Result<DownloadTask>> execute(String taskId) async {
+  Future<Result<void>> execute(String downloadId) async {
     try {
-      return await _downloadRepository.pauseDownload(taskId);
+      final result = await repository.pauseDownload(downloadId);
+      if (result.isSuccess) {
+        return const Result.success(null);
+      } else {
+        return Result.failure(result.errorMessage!);
+      }
     } catch (e) {
       return Result.failure('Failed to pause download: $e');
     }
