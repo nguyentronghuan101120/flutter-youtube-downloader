@@ -231,7 +231,7 @@ Triển khai quản lý file và lịch sử download (F9) với storage managem
 4. Triển khai Enhanced UI (Phase 4)
 5. State Management (Phase 5)
 6. Integration với existing download system
-7. Testing file operations và history management
+7. File operations và history management review
 
 ### Ràng buộc kỹ thuật:
 

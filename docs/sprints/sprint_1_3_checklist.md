@@ -209,7 +209,7 @@ Triển khai giao diện lựa chọn định dạng và chất lượng (F3) v�
 2. Implement Presentation Layer UI (Phase 2)
 3. Thiết lập State Management (Phase 3)
 4. Triển khai Core Services (Phase 4)
-5. Integration testing với Sprint 1.2
+5. Integration với Sprint 1.2
 
 ### Ràng buộc kỹ thuật:
 

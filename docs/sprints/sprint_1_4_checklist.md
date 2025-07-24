@@ -209,7 +209,7 @@ Triển khai hệ thống download với resume capability (F4) và progress tra
 2. Implement Core Services (Phase 2)
 3. Thiết lập Storage Management (Phase 3)
 4. Triển khai Presentation Layer (Phase 4)
-5. Integration testing với Sprint 1.3
+5. Integration với Sprint 1.3
 
 ### Ràng buộc kỹ thuật:
 

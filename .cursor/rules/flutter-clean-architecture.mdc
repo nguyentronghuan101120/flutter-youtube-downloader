@@ -1,0 +1,319 @@
+---
+alwaysApply: true
+---
+
+# 🏗️ Flutter Clean Architecture Rules
+
+## 🚨 Quy tắc nghiêm ngặt - KHÔNG VI PHẠM
+
+### 1. **KHÔNG BAO GIỜ truy cập trực tiếp Service từ Cubit/Bloc**
+
+```dart
+// ❌ VI PHẠM - Cubit import và sử dụng trực tiếp Service
+import '../../../core/services/api_service.dart';
+
+class UserCubit extends Cubit<UserState> {
+  final ApiService _apiService; // ❌ Truy cập trực tiếp service
+```
+
+```dart
+// ✅ ĐÚNG - Cubit chỉ sử dụng UseCases
+import '../../../domain/usecases/user/get_user_profile.dart';
+
+class UserCubit extends Cubit<UserState> {
+  final GetUserProfile _getUserProfile; // ✅ Sử dụng usecase
+```
+
+### 2. **BẮT BUỘC có Domain Layer cho mọi feature**
+
+- ✅ Tạo Entity trong `lib/domain/entities/`
+- ✅ Tạo Repository interface trong `lib/domain/repositories/`
+- ✅ Tạo UseCase trong `lib/domain/usecases/`
+- ❌ KHÔNG định nghĩa business logic trong Service
+
+### 3. **Model phải kế thừa từ Entity**
+
+```dart
+// ✅ ĐÚNG
+class UserModel extends User {
+  const UserModel({
+    required super.id,
+    required super.name,
+    required super.email,
+  });
+
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      email: Email(map['email'] ?? ''),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email.value,
+    };
+  }
+}
+```
+
+### 4. **Repository Implementation trả về trực tiếp từ DataSource**
+
+```dart
+// ✅ ĐÚNG - Trả về trực tiếp từ DataSource
+class UserRepositoryImpl implements UserRepository {
+  final UserDataSource _dataSource;
+
+  UserRepositoryImpl({required UserDataSource dataSource})
+      : _dataSource = dataSource;
+
+  @override
+  Future<User> getUserProfile(String userId) async {
+    try {
+      return await _dataSource.getUser(userId); // Trả về trực tiếp
+    } catch (e) {
+      throw Exception('Failed to get user profile: $e');
+    }
+  }
+}
+```
+
+## 📋 Cấu trúc thư mục chuẩn
+
+```
+lib/
+├── core/                           # Core layer - Shared components
+│   ├── constants/                  # App constants
+│   ├── error/                      # Error handling
+│   ├── utils/                      # Helper functions
+│   ├── services/                   # Platform services
+│   └── dependency_injection/       # DI setup
+│
+├── domain/                         # Domain layer - Business logic
+│   ├── entities/                   # Business entities
+│   ├── repositories/               # Repository interfaces
+│   ├── usecases/                   # Business use cases
+│   └── value_objects/              # Value objects
+│
+├── data/                           # Data layer - External data sources
+│   ├── models/                     # Data models (kế thừa từ entities)
+│   ├── datasources/                # Data sources
+│   └── repositories/               # Repository implementations
+│
+└── presentation/                   # Presentation layer - UI
+    ├── bloc/                       # State management
+    ├── pages/                      # Page widgets
+    ├── widgets/                    # Reusable widgets
+    ├── theme/                      # Theme configuration
+    └── routes/                     # Route management
+```
+
+## 🔄 Dependency Flow
+
+```
+Presentation Layer → Domain Layer ← Data Layer
+       ↓                    ↑              ↑
+   UI Components    Business Logic   External Data
+```
+
+## 📝 Quy trình tạo feature mới
+
+### Bước 1: Domain Layer
+
+1. Tạo Entity trong `lib/domain/entities/`
+2. Tạo Repository interface trong `lib/domain/repositories/`
+3. Tạo UseCase trong `lib/domain/usecases/`
+
+### Bước 2: Data Layer
+
+1. Tạo Model kế thừa Entity trong `lib/data/models/`
+2. Tạo DataSource trong `lib/data/datasources/`
+3. Tạo Repository implementation trong `lib/data/repositories/`
+
+### Bước 3: Presentation Layer
+
+1. Tạo Cubit/Bloc trong `lib/presentation/bloc/`
+2. Tạo UI components trong `lib/presentation/widgets/`
+3. Tạo Pages trong `lib/presentation/pages/`
+
+### Bước 4: Dependency Injection
+
+1. Đăng ký dependencies trong `lib/core/dependency_injection/`
+
+## 🔍 Code Review Checklist
+
+- [ ] **Domain layer không phụ thuộc framework**
+- [ ] **Cubit chỉ sử dụng UseCases**
+- [ ] **Model kế thừa Entity**
+- [ ] **Repository trả về trực tiếp từ DataSource**
+- [ ] **Dependency injection đã đăng ký đầy đủ**
+- [ ] **Import đúng layer**
+
+## 📚 References
+
+- [lib/domain/entities/](mdc:lib/domain/entities/) - Business entities
+- [lib/domain/repositories/](mdc:lib/domain/repositories/) - Repository interfaces
+- [lib/domain/usecases/](mdc:lib/domain/usecases/) - Business use cases
+- [lib/data/models/](mdc:lib/data/models/) - Data models
+- [lib/presentation/bloc/](mdc:lib/presentation/bloc/) - State management
+
+# 🏗️ Flutter Clean Architecture Rules
+
+## 🚨 Quy tắc nghiêm ngặt - KHÔNG VI PHẠM
+
+### 1. **KHÔNG BAO GIỜ truy cập trực tiếp Service từ Cubit/Bloc**
+
+```dart
+// ❌ VI PHẠM - Cubit import và sử dụng trực tiếp Service
+import '../../../core/services/api_service.dart';
+
+class UserCubit extends Cubit<UserState> {
+  final ApiService _apiService; // ❌ Truy cập trực tiếp service
+```
+
+```dart
+// ✅ ĐÚNG - Cubit chỉ sử dụng UseCases
+import '../../../domain/usecases/user/get_user_profile.dart';
+
+class UserCubit extends Cubit<UserState> {
+  final GetUserProfile _getUserProfile; // ✅ Sử dụng usecase
+```
+
+### 2. **BẮT BUỘC có Domain Layer cho mọi feature**
+
+- ✅ Tạo Entity trong `lib/domain/entities/`
+- ✅ Tạo Repository interface trong `lib/domain/repositories/`
+- ✅ Tạo UseCase trong `lib/domain/usecases/`
+- ❌ KHÔNG định nghĩa business logic trong Service
+
+### 3. **Model phải kế thừa từ Entity**
+
+```dart
+// ✅ ĐÚNG
+class UserModel extends User {
+  const UserModel({
+    required super.id,
+    required super.name,
+    required super.email,
+  });
+
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      email: Email(map['email'] ?? ''),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email.value,
+    };
+  }
+}
+```
+
+### 4. **Repository Implementation trả về trực tiếp từ DataSource**
+
+```dart
+// ✅ ĐÚNG - Trả về trực tiếp từ DataSource
+class UserRepositoryImpl implements UserRepository {
+  final UserDataSource _dataSource;
+
+  UserRepositoryImpl({required UserDataSource dataSource})
+      : _dataSource = dataSource;
+
+  @override
+  Future<User> getUserProfile(String userId) async {
+    try {
+      return await _dataSource.getUser(userId); // Trả về trực tiếp
+    } catch (e) {
+      throw Exception('Failed to get user profile: $e');
+    }
+  }
+}
+```
+
+## 📋 Cấu trúc thư mục chuẩn
+
+```
+lib/
+├── core/                           # Core layer - Shared components
+│   ├── constants/                  # App constants
+│   ├── error/                      # Error handling
+│   ├── utils/                      # Helper functions
+│   ├── services/                   # Platform services
+│   └── dependency_injection/       # DI setup
+│
+├── domain/                         # Domain layer - Business logic
+│   ├── entities/                   # Business entities
+│   ├── repositories/               # Repository interfaces
+│   ├── usecases/                   # Business use cases
+│   └── value_objects/              # Value objects
+│
+├── data/                           # Data layer - External data sources
+│   ├── models/                     # Data models (kế thừa từ entities)
+│   ├── datasources/                # Data sources
+│   └── repositories/               # Repository implementations
+│
+└── presentation/                   # Presentation layer - UI
+    ├── bloc/                       # State management
+    ├── pages/                      # Page widgets
+    ├── widgets/                    # Reusable widgets
+    ├── theme/                      # Theme configuration
+    └── routes/                     # Route management
+```
+
+## 🔄 Dependency Flow
+
+```
+Presentation Layer → Domain Layer ← Data Layer
+       ↓                    ↑              ↑
+   UI Components    Business Logic   External Data
+```
+
+## 📝 Quy trình tạo feature mới
+
+### Bước 1: Domain Layer
+
+1. Tạo Entity trong `lib/domain/entities/`
+2. Tạo Repository interface trong `lib/domain/repositories/`
+3. Tạo UseCase trong `lib/domain/usecases/`
+
+### Bước 2: Data Layer
+
+1. Tạo Model kế thừa Entity trong `lib/data/models/`
+2. Tạo DataSource trong `lib/data/datasources/`
+3. Tạo Repository implementation trong `lib/data/repositories/`
+
+### Bước 3: Presentation Layer
+
+1. Tạo Cubit/Bloc trong `lib/presentation/bloc/`
+2. Tạo UI components trong `lib/presentation/widgets/`
+3. Tạo Pages trong `lib/presentation/pages/`
+
+### Bước 4: Dependency Injection
+
+1. Đăng ký dependencies trong `lib/core/dependency_injection/`
+
+## 🔍 Code Review Checklist
+
+- [ ] **Domain layer không phụ thuộc framework**
+- [ ] **Cubit chỉ sử dụng UseCases**
+- [ ] **Model kế thừa Entity**
+- [ ] **Repository trả về trực tiếp từ DataSource**
+- [ ] **Dependency injection đã đăng ký đầy đủ**
+- [ ] **Import đúng layer**
+
+## 📚 References
+
+- [lib/domain/entities/](mdc:lib/domain/entities/) - Business entities
+- [lib/domain/repositories/](mdc:lib/domain/repositories/) - Repository interfaces
+- [lib/domain/usecases/](mdc:lib/domain/usecases/) - Business use cases
+- [lib/data/models/](mdc:lib/data/models/) - Data models
+- [lib/presentation/bloc/](mdc:lib/presentation/bloc/) - State management

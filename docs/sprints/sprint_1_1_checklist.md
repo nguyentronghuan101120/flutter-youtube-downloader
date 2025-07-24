@@ -189,7 +189,7 @@ Thiết lập foundation và triển khai chức năng nhập URL (F1) với val
 2. Implement Use Cases (Phase 2)
 3. Thiết lập Data Layer (Phase 3)
 4. Triển khai Presentation Layer (Phase 4)
-5. Integration testing giữa các layers
+5. Integration với existing layers
 
 ### Ràng buộc pháp lý:
 

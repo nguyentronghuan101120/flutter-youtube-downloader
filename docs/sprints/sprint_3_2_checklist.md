@@ -228,8 +228,8 @@ Triển khai tùy chỉnh chất lượng nâng cao (F11) với custom bitrate, 
 3. Triển khai Presentation Layer (Phase 3)
 4. Quality Preview & State Management (Phase 4)
 5. Integration với existing format selection system
-6. Quality optimization testing
-7. Performance testing cho advanced encoding
+6. Quality optimization review
+7. Performance review cho advanced encoding
 
 ### Ràng buộc kỹ thuật:
 

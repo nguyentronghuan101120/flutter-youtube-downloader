@@ -108,28 +108,11 @@ Triển khai trích xuất subtitle (F10) với format conversion, preview funct
 - Subtitle extraction states
 - Language selection states
 
-### Phase 5: Testing - Subtitle Functionality
-
-**Mục tiêu:** Đảm bảo chất lượng với subtitle testing
-
-#### Task List:
-
-- [ ] **T3.1.10** - `test/domain/usecases/extract_subtitle_test.dart`
-  - Write subtitle tests
-  - Thêm test cases cho format conversion
-  - Liên kết SRS: F10 - Testing
-
-#### Deliverables:
-
-- Subtitle functionality tests
-- Format conversion test coverage
-- Quality assurance cho subtitle features
-
 ---
 
 ## 📈 Progress Tracking
 
-**Tổng tiến độ:** 0/10 tasks - 0%
+**Tổng tiến độ:** 0/9 tasks - 0%
 
 **Phase Progress:**
 
@@ -137,7 +120,6 @@ Triển khai trích xuất subtitle (F10) với format conversion, preview funct
 - Phase 2 (Core Services): 0/3 tasks - 0%
 - Phase 3 (Presentation Layer): 0/3 tasks - 0%
 - Phase 4 (State Management): 0/1 tasks - 0%
-- Phase 5 (Testing): 0/1 tasks - 0%
 
 **Ưu tiên tiếp theo:** Bắt đầu với Phase 1 - Domain Layer Subtitle Entities
 
@@ -230,9 +212,8 @@ Triển khai trích xuất subtitle (F10) với format conversion, preview funct
 2. Implement Core Services (Phase 2)
 3. Triển khai Presentation Layer (Phase 3)
 4. Thiết lập State Management (Phase 4)
-5. Testing (Phase 5)
-6. Integration với existing video analysis system
-7. Subtitle functionality testing
+5. Integration với existing video analysis system
+6. Subtitle functionality review
 
 ### Ràng buộc kỹ thuật:
 

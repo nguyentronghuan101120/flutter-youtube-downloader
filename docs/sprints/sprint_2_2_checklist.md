@@ -231,8 +231,8 @@ Cải thiện giao diện và trải nghiệm người dùng (F8) với theme sy
 3. Thiết lập Settings & Configuration (Phase 3)
 4. Triển khai Responsive Design (Phase 4)
 5. Enhanced Progress & Animations (Phase 5)
-6. Integration testing với existing UI
-7. Accessibility testing và optimization
+6. Integration với existing UI
+7. Accessibility optimization
 
 ### Ràng buộc kỹ thuật:
 

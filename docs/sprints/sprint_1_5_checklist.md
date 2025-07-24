@@ -102,9 +102,9 @@ Triển khai audio conversion với FFmpeg (F5) và hoàn thiện core features,
 - Error handling dialogs
 - User-friendly error messages
 
-### Phase 5: Connectivity & Integration Testing
+### Phase 5: Connectivity Service
 
-**Mục tiêu:** Thiết lập connectivity service và integration testing
+**Mục tiêu:** Thiết lập connectivity service cho network management
 
 #### Task List:
 
@@ -114,22 +114,17 @@ Triển khai audio conversion với FFmpeg (F5) và hoàn thiện core features,
   - Thêm offline mode handling
   - Liên kết SRS: F4 - Network Handling
 
-- [ ] **T1.5.10** - `test/integration/download_integration_test.dart`
-  - Write integration tests cho download flow
-  - Thêm end-to-end testing scenarios
-  - Liên kết SRS: F4 - Testing
-
 #### Deliverables:
 
 - Connectivity service
-- Integration tests cho download flow
-- End-to-end testing foundation
+- Network status monitoring
+- Offline mode handling
 
 ---
 
 ## 📈 Progress Tracking
 
-**Tổng tiến độ:** 0/10 tasks - 0%
+**Tổng tiến độ:** 0/9 tasks - 0%
 
 **Phase Progress:**
 
@@ -137,7 +132,7 @@ Triển khai audio conversion với FFmpeg (F5) và hoàn thiện core features,
 - Phase 2 (Audio Format UI): 0/1 tasks - 0%
 - Phase 3 (Enhanced Home Page): 0/2 tasks - 0%
 - Phase 4 (Notification & Error): 0/2 tasks - 0%
-- Phase 5 (Connectivity & Testing): 0/2 tasks - 0%
+- Phase 5 (Connectivity): 0/1 tasks - 0%
 
 **Ưu tiên tiếp theo:** Bắt đầu với Phase 1 - Audio Conversion Services
 
@@ -178,11 +173,6 @@ Triển khai audio conversion với FFmpeg (F5) và hoàn thiện core features,
    - **Khắc phục:** Implement notification service
    - **File:** `lib/core/services/notification_service.dart`
 
-6. **No Integration Tests** - Chưa có integration testing
-   - **Mức độ:** Medium
-   - **Khắc phục:** Write integration tests cho download flow
-   - **File:** `test/integration/download_integration_test.dart`
-
 ---
 
 ## 📝 Ghi chú
@@ -199,7 +189,6 @@ Triển khai audio conversion với FFmpeg (F5) và hoàn thiện core features,
 - **ffmpeg_kit_flutter_new:** Audio conversion và processing
 - **flutter_local_notifications:** Local notifications
 - **connectivity_plus:** Network connectivity monitoring
-- **integration_test:** End-to-end testing
 
 ### Audio Processing Features:
 
@@ -221,7 +210,7 @@ Triển khai audio conversion với FFmpeg (F5) và hoàn thiện core features,
 2. Implement Audio Format UI (Phase 2)
 3. Enhance Home Page (Phase 3)
 4. Thiết lập Notification System (Phase 4)
-5. Integration Testing (Phase 5)
+5. Connectivity Service (Phase 5)
 6. Core Features completion review
 
 ### Ràng buộc kỹ thuật:

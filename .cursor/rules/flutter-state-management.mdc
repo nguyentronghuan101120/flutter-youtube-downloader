@@ -1,0 +1,266 @@
+# 🎯 Flutter State Management Rules
+
+## 🚨 Quy tắc nghiêm ngặt
+
+### 1. **Cubit chỉ quản lý State, không chứa Business Logic**
+
+```dart
+// ❌ SAI - Business logic trong Cubit
+class UserCubit extends Cubit<UserState> {
+  Future<void> _processUserData() async {
+    final userData = await _apiService.getUser();
+    final processedData = _processData(userData); // ❌ Business logic
+    emit(UserLoaded(user: processedData));
+  }
+```
+
+```dart
+// ✅ ĐÚNG - Cubit chỉ gọi UseCase
+class UserCubit extends Cubit<UserState> {
+  final GetUserProfile _getUserProfile;
+
+  UserCubit({required GetUserProfile getUserProfile})
+      : _getUserProfile = getUserProfile,
+        super(const UserInitial());
+
+  Future<void> loadUserProfile(String userId) async {
+    emit(const UserLoading());
+    try {
+      final user = await _getUserProfile(userId); // ✅ Gọi UseCase
+      emit(UserLoaded(user: user));
+    } catch (e) {
+      emit(UserError(message: e.toString()));
+    }
+  }
+}
+```
+
+### 2. **State phải Immutable và Extend Equatable**
+
+```dart
+// ✅ ĐÚNG - Immutable state với Equatable
+abstract class UserState extends Equatable {
+  const UserState();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class UserInitial extends UserState {
+  const UserInitial();
+}
+
+class UserLoading extends UserState {
+  const UserLoading();
+}
+
+class UserLoaded extends UserState {
+  final User user;
+
+  const UserLoaded({required this.user});
+
+  @override
+  List<Object?> get props => [user];
+}
+
+class UserError extends UserState {
+  final String message;
+
+  const UserError({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+```
+
+### 3. **Luôn có Loading và Error States**
+
+```dart
+// ✅ ĐÚNG - Complete state management
+abstract class FeatureState extends Equatable {
+  const FeatureState();
+}
+
+class FeatureInitial extends FeatureState {
+  const FeatureInitial();
+}
+
+class FeatureLoading extends FeatureState {
+  const FeatureLoading();
+}
+
+class FeatureLoaded extends FeatureState {
+  final List<Data> data;
+
+  const FeatureLoaded({required this.data});
+
+  @override
+  List<Object?> get props => [data];
+}
+
+class FeatureError extends FeatureState {
+  final String message;
+
+  const FeatureError({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+```
+
+## 📋 Cấu trúc BLoC chuẩn
+
+```
+lib/presentation/bloc/
+├── feature_name/
+│   ├── feature_cubit.dart      # Cubit implementation
+│   └── feature_state.dart      # State classes
+├── auth/
+│   ├── auth_cubit.dart
+│   └── auth_state.dart
+└── user/
+    ├── user_cubit.dart
+    └── user_state.dart
+```
+
+## 🎨 UI Integration với BLoC
+
+### 1. **BlocBuilder Pattern**
+
+```dart
+// ✅ ĐÚNG - Sử dụng BlocBuilder
+class UserProfileWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<UserCubit, UserState>(
+      builder: (context, state) {
+        return switch (state) {
+          UserInitial() => const SizedBox.shrink(),
+          UserLoading() => const Center(
+              child: CircularProgressIndicator(),
+            ),
+          UserLoaded() => _buildUserProfile(context, state.user),
+          UserError() => Center(
+              child: Text('Error: ${state.message}'),
+            ),
+        };
+      },
+    );
+  }
+
+  Widget _buildUserProfile(BuildContext context, User user) {
+    return Card(
+      child: ListTile(
+        title: Text(user.name),
+        subtitle: Text(user.email.value),
+      ),
+    );
+  }
+}
+```
+
+### 2. **BlocListener cho Side Effects**
+
+```dart
+// ✅ ĐÚNG - Sử dụng BlocListener cho navigation
+class LoginPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthSuccess) {
+          Navigator.pushReplacementNamed(context, '/home');
+        } else if (state is AuthError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message)),
+          );
+        }
+      },
+      child: Scaffold(
+        body: BlocBuilder<AuthCubit, AuthState>(
+          builder: (context, state) {
+            return LoginForm();
+          },
+        ),
+      ),
+    );
+  }
+}
+```
+
+### 3. **BlocProvider Setup**
+
+```dart
+// ✅ ĐÚNG - Proper BlocProvider setup
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthCubit>(
+          create: (context) => sl<AuthCubit>(),
+        ),
+        BlocProvider<UserCubit>(
+          create: (context) => sl<UserCubit>(),
+        ),
+      ],
+      child: MaterialApp(
+        home: HomePage(),
+      ),
+    );
+  }
+}
+```
+
+## 🔧 Dependency Injection với BLoC
+
+```dart
+// ✅ ĐÚNG - Cubit với dependency injection
+@injectable
+class UserCubit extends Cubit<UserState> {
+  final GetUserProfile _getUserProfile;
+  final UpdateUserProfile _updateUserProfile;
+
+  UserCubit({
+    required GetUserProfile getUserProfile,
+    required UpdateUserProfile updateUserProfile,
+  })  : _getUserProfile = getUserProfile,
+        _updateUserProfile = updateUserProfile,
+        super(const UserInitial());
+
+  Future<void> loadUserProfile(String userId) async {
+    emit(const UserLoading());
+    try {
+      final user = await _getUserProfile(userId);
+      emit(UserLoaded(user: user));
+    } catch (e) {
+      emit(UserError(message: e.toString()));
+    }
+  }
+
+  Future<void> updateProfile(User user) async {
+    emit(const UserUpdating());
+    try {
+      final updatedUser = await _updateUserProfile(user);
+      emit(UserLoaded(user: updatedUser));
+    } catch (e) {
+      emit(UserError(message: e.toString()));
+    }
+  }
+}
+```
+
+## 🔍 Code Review Checklist
+
+- [ ] **Cubit không chứa business logic**
+- [ ] **State immutable và extend Equatable**
+- [ ] **Có đầy đủ Loading và Error states**
+- [ ] **Sử dụng BlocBuilder/BlocListener đúng cách**
+- [ ] **Dependency injection setup đúng**
+
+## 📚 References
+
+- [lib/presentation/bloc/](mdc:lib/presentation/bloc/) - State management
+- [lib/core/dependency_injection/](mdc:lib/core/dependency_injection/) - DI setup
+
+---
