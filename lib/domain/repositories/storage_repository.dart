@@ -34,4 +34,7 @@ abstract class StorageRepository {
 
   /// Lấy danh sách file trong thư mục
   Future<List<String>> getFilesInDirectory(String directoryPath);
+
+  /// Lấy đường dẫn thư mục Downloads của hệ thống (nếu có thể truy cập)
+  Future<String?> getSystemDownloadsPath();
 }

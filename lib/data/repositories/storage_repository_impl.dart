@@ -3,37 +3,143 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'dart:developer' as developer;
 import '../../domain/repositories/storage_repository.dart';
+import 'package:flutter/foundation.dart';
 
 @Injectable(as: StorageRepository)
 class StorageRepositoryImpl implements StorageRepository {
   @override
   Future<String> getDefaultDownloadPath() async {
     try {
-      // For Android, use the system Downloads directory
-      // This should point to /storage/emulated/0/Download/
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir != null) {
-        // Try to get the system Downloads directory directly
-        final downloadsDir = Directory('/storage/emulated/0/Download');
-
+      if (kIsWeb) {
+        // Web platform - use temporary directory
+        final tempDir = await getTemporaryDirectory();
+        final downloadsDir = Directory('${tempDir.path}/downloads');
         if (!await downloadsDir.exists()) {
           await downloadsDir.create(recursive: true);
         }
-
         developer.log(
-          '[storage_repository_impl.dart] - Using system downloads: ${downloadsDir.path}',
+          '[storage_repository_impl.dart] - Using web downloads: ${downloadsDir.path}',
         );
         return downloadsDir.path;
       }
 
-      // Fallback to app documents directory
+      if (Platform.isAndroid) {
+        // Android platform
+        try {
+          final externalDir = await getExternalStorageDirectory();
+          if (externalDir != null) {
+            // Try to get the system Downloads directory directly
+            final downloadsDir = Directory('/storage/emulated/0/Download');
+
+            if (!await downloadsDir.exists()) {
+              await downloadsDir.create(recursive: true);
+            }
+
+            developer.log(
+              '[storage_repository_impl.dart] - Using Android system downloads: ${downloadsDir.path}',
+            );
+            return downloadsDir.path;
+          }
+        } catch (e) {
+          developer.log(
+            '[storage_repository_impl.dart] - Android external storage failed, using fallback: $e',
+          );
+        }
+      } else if (Platform.isIOS) {
+        // iOS platform - use app documents directory
+        final documentsDir = await getApplicationDocumentsDirectory();
+        final downloadsDir = Directory('${documentsDir.path}/downloads');
+        if (!await downloadsDir.exists()) {
+          await downloadsDir.create(recursive: true);
+        }
+        developer.log(
+          '[storage_repository_impl.dart] - Using iOS downloads: ${downloadsDir.path}',
+        );
+        return downloadsDir.path;
+      } else if (Platform.isMacOS) {
+        // macOS platform - use app documents directory due to sandbox restrictions
+        // Users can manually move files to Downloads folder if needed
+        final documentsDir = await getApplicationDocumentsDirectory();
+        final downloadsDir = Directory('${documentsDir.path}/Downloads');
+        if (!await downloadsDir.exists()) {
+          await downloadsDir.create(recursive: true);
+        }
+        developer.log(
+          '[storage_repository_impl.dart] - Using macOS app documents downloads: ${downloadsDir.path}',
+        );
+        return downloadsDir.path;
+      } else if (Platform.isWindows) {
+        // Windows platform - use user's Downloads folder
+        final homePath = Platform.environment['USERPROFILE'];
+        if (homePath != null) {
+          final downloadsDir = Directory('$homePath/Downloads');
+
+          if (await downloadsDir.exists()) {
+            // Create a subdirectory for the app
+            final appDownloadsDir = Directory(
+              '${downloadsDir.path}/YouTubeDownloader',
+            );
+            if (!await appDownloadsDir.exists()) {
+              await appDownloadsDir.create(recursive: true);
+            }
+            developer.log(
+              '[storage_repository_impl.dart] - Using Windows Downloads: ${appDownloadsDir.path}',
+            );
+            return appDownloadsDir.path;
+          }
+        }
+
+        // Fallback to app documents directory
+        final documentsDir = await getApplicationDocumentsDirectory();
+        final downloadsDir = Directory('${documentsDir.path}/downloads');
+        if (!await downloadsDir.exists()) {
+          await downloadsDir.create(recursive: true);
+        }
+        developer.log(
+          '[storage_repository_impl.dart] - Using Windows app documents downloads: ${downloadsDir.path}',
+        );
+        return downloadsDir.path;
+      } else if (Platform.isLinux) {
+        // Linux platform - use user's Downloads folder
+        final homePath = Platform.environment['HOME'];
+        if (homePath != null) {
+          final downloadsDir = Directory('$homePath/Downloads');
+
+          if (await downloadsDir.exists()) {
+            // Create a subdirectory for the app
+            final appDownloadsDir = Directory(
+              '${downloadsDir.path}/YouTubeDownloader',
+            );
+            if (!await appDownloadsDir.exists()) {
+              await appDownloadsDir.create(recursive: true);
+            }
+            developer.log(
+              '[storage_repository_impl.dart] - Using Linux Downloads: ${appDownloadsDir.path}',
+            );
+            return appDownloadsDir.path;
+          }
+        }
+
+        // Fallback to app documents directory
+        final documentsDir = await getApplicationDocumentsDirectory();
+        final downloadsDir = Directory('${documentsDir.path}/downloads');
+        if (!await downloadsDir.exists()) {
+          await downloadsDir.create(recursive: true);
+        }
+        developer.log(
+          '[storage_repository_impl.dart] - Using Linux app documents downloads: ${downloadsDir.path}',
+        );
+        return downloadsDir.path;
+      }
+
+      // Fallback to app documents directory for any other platform
       final documentsDir = await getApplicationDocumentsDirectory();
       final downloadsDir = Directory('${documentsDir.path}/downloads');
       if (!await downloadsDir.exists()) {
         await downloadsDir.create(recursive: true);
       }
       developer.log(
-        '[storage_repository_impl.dart] - Using app documents downloads: ${downloadsDir.path}',
+        '[storage_repository_impl.dart] - Using fallback downloads: ${downloadsDir.path}',
       );
       return downloadsDir.path;
     } catch (e) {
@@ -65,10 +171,19 @@ class StorageRepositoryImpl implements StorageRepository {
   @override
   Future<bool> hasStoragePermission() async {
     try {
-      // For Android 10+ (API 29+), we don't need explicit permission for app-specific storage
-      // For older versions, we'll assume permission is granted if we can access external storage
-      final externalDir = await getExternalStorageDirectory();
-      return externalDir != null;
+      if (Platform.isAndroid) {
+        // For Android 10+ (API 29+), we don't need explicit permission for app-specific storage
+        // For older versions, we'll assume permission is granted if we can access external storage
+        final externalDir = await getExternalStorageDirectory();
+        return externalDir != null;
+      } else if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+        // Desktop platforms don't require explicit storage permissions
+        return true;
+      } else if (Platform.isIOS) {
+        // iOS uses app sandbox, so we have permission to app documents
+        return true;
+      }
+      return false;
     } catch (e) {
       developer.log(
         '[storage_repository_impl.dart] - Error checking storage permission: $e',
@@ -80,10 +195,19 @@ class StorageRepositoryImpl implements StorageRepository {
   @override
   Future<bool> requestStoragePermission() async {
     try {
-      // For now, we'll assume permission is granted if we can access external storage
-      // In a real app, you would use permission_handler package to request permissions
-      final externalDir = await getExternalStorageDirectory();
-      return externalDir != null;
+      if (Platform.isAndroid) {
+        // For now, we'll assume permission is granted if we can access external storage
+        // In a real app, you would use permission_handler package to request permissions
+        final externalDir = await getExternalStorageDirectory();
+        return externalDir != null;
+      } else if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+        // Desktop platforms don't require explicit storage permissions
+        return true;
+      } else if (Platform.isIOS) {
+        // iOS uses app sandbox, so we have permission to app documents
+        return true;
+      }
+      return false;
     } catch (e) {
       developer.log(
         '[storage_repository_impl.dart] - Error requesting storage permission: $e',
@@ -228,6 +352,43 @@ class StorageRepositoryImpl implements StorageRepository {
         '[storage_repository_impl.dart] - Error getting files in directory: $e',
       );
       return [];
+    }
+  }
+
+  @override
+  Future<String?> getSystemDownloadsPath() async {
+    try {
+      if (Platform.isMacOS) {
+        final homePath = Platform.environment['HOME'];
+        if (homePath != null) {
+          final downloadsDir = Directory('$homePath/Downloads');
+          if (await downloadsDir.exists()) {
+            return downloadsDir.path;
+          }
+        }
+      } else if (Platform.isWindows) {
+        final homePath = Platform.environment['USERPROFILE'];
+        if (homePath != null) {
+          final downloadsDir = Directory('$homePath/Downloads');
+          if (await downloadsDir.exists()) {
+            return downloadsDir.path;
+          }
+        }
+      } else if (Platform.isLinux) {
+        final homePath = Platform.environment['HOME'];
+        if (homePath != null) {
+          final downloadsDir = Directory('$homePath/Downloads');
+          if (await downloadsDir.exists()) {
+            return downloadsDir.path;
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      developer.log(
+        '[storage_repository_impl.dart] - Error getting system downloads path: $e',
+      );
+      return null;
     }
   }
 }

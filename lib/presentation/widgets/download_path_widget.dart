@@ -50,7 +50,8 @@ class DownloadPathWidget extends StatelessWidget {
                     initial: () => const SizedBox.shrink(),
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
-                    loaded: (path) => _buildPathInfo(path),
+                    loaded: (path, systemDownloadsPath) =>
+                        _buildPathInfo(path, systemDownloadsPath),
                     error: (message) => _buildErrorWidget(message),
                   ),
                   const SizedBox(height: 12),
@@ -67,7 +68,7 @@ class DownloadPathWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildPathInfo(String path) {
+  Widget _buildPathInfo(String path, String? systemDownloadsPath) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -105,6 +106,37 @@ class DownloadPathWidget extends StatelessWidget {
               fontSize: 12,
             ),
           ),
+          if (systemDownloadsPath != null && !_isSystemDownloadsPath(path)) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Icons.info, color: Colors.blue.shade600, size: 16),
+                const SizedBox(width: 8),
+                const Text(
+                  'System Downloads Available:',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SelectableText(
+              systemDownloadsPath,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 11,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '💡 You can manually move downloaded files to the system Downloads folder',
+              style: TextStyle(
+                color: Colors.blue.shade700,
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
         ],
       ),
     );
