@@ -5,6 +5,7 @@ import '../bloc/video_analysis/video_analysis_state.dart';
 import '../widgets/url_input_widget.dart';
 import '../widgets/video_info_widget.dart';
 import '../widgets/download_path_widget.dart';
+import '../widgets/common_button.dart';
 import 'download_page.dart';
 import '../../domain/entities/video_info.dart';
 
@@ -49,8 +50,8 @@ class HomePage extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 24),
-                const DownloadPathWidget(),
-                const SizedBox(height: 24),
+                // const DownloadPathWidget(),
+                // const SizedBox(height: 24),
                 BlocBuilder<VideoAnalysisCubit, VideoAnalysisState>(
                   builder: (context, state) {
                     return state.when(
@@ -115,13 +116,12 @@ class HomePage extends StatelessWidget {
       children: [
         VideoInfoWidget(videoInfo: videoInfo),
         const SizedBox(height: 16),
-        ElevatedButton.icon(
+        CommonButton(
+          text: 'Download Video',
+          icon: Icons.download,
           onPressed: () => _navigateToDownload(context, videoInfo),
-          icon: const Icon(Icons.download),
-          label: const Text('Download Video'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-          ),
+          isFullWidth: true,
+          size: CommonButtonSize.large,
         ),
       ],
     );
@@ -163,24 +163,23 @@ class HomePage extends StatelessWidget {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _navigateToDownload(context, videoInfo);
-                },
-                icon: const Icon(Icons.download),
-                label: const Text('Download Video'),
-              ),
+            CommonButton(
+              text: 'Download Video',
+              icon: Icons.download,
+              onPressed: () {
+                Navigator.pop(context);
+                _navigateToDownload(context, videoInfo);
+              },
+              isFullWidth: true,
+              size: CommonButtonSize.medium,
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
+            CommonButton(
+              text: 'Cancel',
+              onPressed: () => Navigator.pop(context),
+              variant: CommonButtonVariant.outline,
+              isFullWidth: true,
+              size: CommonButtonSize.medium,
             ),
           ],
         ),

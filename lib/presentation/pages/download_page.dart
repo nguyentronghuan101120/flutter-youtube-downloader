@@ -86,25 +86,18 @@ class DownloadPage extends StatelessWidget {
   ) {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildVideoInfo(context, videoInfo),
-          const SizedBox(height: 24),
-          Expanded(
-            child: FormatSelectionWidget(
-              videoStreams: videoStreams,
-              audioStreams: audioStreams,
-              onFormatSelected: (format, quality) {
-                context.read<DownloadCubit>().startDownload(
-                  url: videoInfo.url,
-                  format: format,
-                  quality: quality,
-                );
-              },
-            ),
-          ),
-        ],
+      child: Expanded(
+        child: FormatSelectionWidget(
+          videoStreams: videoStreams,
+          audioStreams: audioStreams,
+          onFormatSelected: (format, quality) {
+            context.read<DownloadCubit>().startDownload(
+              url: videoInfo.url,
+              format: format,
+              quality: quality,
+            );
+          },
+        ),
       ),
     );
   }
@@ -253,37 +246,6 @@ class DownloadPage extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildVideoInfo(BuildContext context, VideoInfo videoInfo) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              videoInfo.title,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              videoInfo.author,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text(
-                  '${videoInfo.duration} • ${videoInfo.viewCount} views',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

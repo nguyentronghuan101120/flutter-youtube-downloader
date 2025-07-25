@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'common_button.dart';
 
 class UrlInputWidget extends StatefulWidget {
   final Function(String) onUrlSubmitted;
@@ -103,6 +105,14 @@ class _UrlInputWidgetState extends State<UrlInputWidget> {
     });
   }
 
+  Future<void> _pasteUrl() async {
+    final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text != null) {
+      _urlController.text = data!.text!;
+      _validateUrl();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -133,7 +143,7 @@ class _UrlInputWidgetState extends State<UrlInputWidget> {
                   context,
                 ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
-              prefixIcon: Icon(Icons.link, color: _getIconColor()),
+              prefixIcon: _buildPrefixIcon(),
               suffixIcon: _buildSuffixIcon(),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
@@ -204,97 +214,20 @@ class _UrlInputWidgetState extends State<UrlInputWidget> {
         const SizedBox(height: 16),
 
         // Submit Button
-        ElevatedButton(
+        CommonButton(
+          text: 'Analyze Video',
+          icon: Icons.search,
           onPressed: _isValidUrl && !widget.isLoading ? _submitUrl : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 2,
-          ),
-          child: widget.isLoading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.search, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Analyze Video',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Help Text
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Supported URL formats:',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              _buildUrlExample('https://youtube.com/watch?v=VIDEO_ID'),
-              _buildUrlExample('https://youtu.be/VIDEO_ID'),
-              _buildUrlExample('https://youtube.com/embed/VIDEO_ID'),
-            ],
-          ),
+          isLoading: widget.isLoading,
+          isFullWidth: true,
+          size: CommonButtonSize.large,
         ),
       ],
     );
   }
 
-  Widget _buildUrlExample(String example) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 24, top: 4),
-      child: Text(
-        '• $example',
-        style: TextStyle(
-          fontSize: 11,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          fontFamily: 'monospace',
-        ),
-      ),
-    );
+  Widget _buildPrefixIcon() {
+    return Icon(Icons.link, color: _getIconColor());
   }
 
   Widget? _buildSuffixIcon() {
@@ -309,15 +242,27 @@ class _UrlInputWidgetState extends State<UrlInputWidget> {
       );
     }
 
-    if (_urlController.text.isNotEmpty) {
-      return IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: _clearUrl,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-      );
-    }
-
-    return null;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.paste),
+          onPressed: _pasteUrl,
+          tooltip: 'Paste URL',
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+          iconSize: 20,
+        ),
+        if (_urlController.text.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: _clearUrl,
+            tooltip: 'Clear URL',
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+      ],
+    );
   }
 
   Color _getBorderColor() {

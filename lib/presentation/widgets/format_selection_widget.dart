@@ -44,8 +44,6 @@ class _FormatSelectionWidgetState extends State<FormatSelectionWidget>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Select Format', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 16),
         TabBar(
           controller: _tabController,
           tabs: const [
