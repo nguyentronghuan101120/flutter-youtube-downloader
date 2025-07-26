@@ -4,8 +4,8 @@ import '../bloc/video_analysis/video_analysis_cubit.dart';
 import '../bloc/video_analysis/video_analysis_state.dart';
 import '../widgets/url_input_widget.dart';
 import '../widgets/video_info_widget.dart';
-import '../widgets/download_path_widget.dart';
 import '../widgets/common_button.dart';
+import '../widgets/common_loading_dialog.dart';
 import 'download_page.dart';
 import '../../domain/entities/video_info.dart';
 
@@ -23,12 +23,14 @@ class HomePage extends StatelessWidget {
         listener: (context, state) {
           state.when(
             initial: () {},
-            loading: (lastAnalyzedUrl) {},
+            loading: (lastAnalyzedUrl) {
+              CommonLoadingDialog.show(context, message: 'Analyzing video...');
+            },
             success: (videoInfo, lastAnalyzedUrl) {
-              // Show download option when video analysis is successful
-              _showDownloadOption(context, videoInfo);
+              CommonLoadingDialog.hide(context);
             },
             error: (message, lastAnalyzedUrl) {
+              CommonLoadingDialog.hide(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(message),
@@ -99,16 +101,7 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('Analyzing video...'),
-        ],
-      ),
-    );
+    return const SizedBox.shrink(); // Hide loading state since we have dialog
   }
 
   Widget _buildSuccessState(BuildContext context, VideoInfo videoInfo) {
@@ -146,43 +139,6 @@ class HomePage extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
-      ),
-    );
-  }
-
-  void _showDownloadOption(BuildContext context, VideoInfo videoInfo) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Video analyzed successfully!',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            CommonButton(
-              text: 'Download Video',
-              icon: Icons.download,
-              onPressed: () {
-                Navigator.pop(context);
-                _navigateToDownload(context, videoInfo);
-              },
-              isFullWidth: true,
-              size: CommonButtonSize.medium,
-            ),
-            const SizedBox(height: 8),
-            CommonButton(
-              text: 'Cancel',
-              onPressed: () => Navigator.pop(context),
-              variant: CommonButtonVariant.outline,
-              isFullWidth: true,
-              size: CommonButtonSize.medium,
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -62,4 +62,34 @@ extension DownloadStatusExtension on DownloadStatus {
         return 'FAILED';
     }
   }
+
+  String get statusDisplayName {
+    switch (this) {
+      case DownloadStatus.queued:
+        return 'Queued';
+      case DownloadStatus.downloading:
+        return 'Downloading';
+      case DownloadStatus.paused:
+        return 'Paused';
+      case DownloadStatus.completed:
+        return 'Completed';
+      case DownloadStatus.failed:
+        return 'Failed';
+    }
+  }
+
+  IconData get emptyStateIcon {
+    switch (this) {
+      case DownloadStatus.queued:
+        return Icons.schedule;
+      case DownloadStatus.downloading:
+        return Icons.download;
+      case DownloadStatus.paused:
+        return Icons.pause_circle;
+      case DownloadStatus.completed:
+        return Icons.check_circle;
+      case DownloadStatus.failed:
+        return Icons.error;
+    }
+  }
 }

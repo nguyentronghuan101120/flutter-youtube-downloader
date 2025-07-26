@@ -4,3 +4,4 @@ alwaysApply: true
 
 - Không được dùng print hay debugPrint, chỉ được phép dùng dart:developer và developer.log để log
 - Log theo cấu trúc sau "[file_name] - message"
+- Trước khi tạo 1 function mới, check lại toàn bộ utils xem đã có hàm nào tương tự như vậy hay chưa, tránh hiện tượng DRY

@@ -3,6 +3,7 @@ import '../entities/video_info.dart';
 import '../repositories/video_repository.dart';
 import '../../core/usecases/base_usecase.dart';
 import '../../core/result/result.dart';
+import '../../core/utils/video_info_utils.dart';
 
 @injectable
 class AnalyzeVideoUseCase implements BaseUseCase<Result<VideoInfo>, String> {
@@ -15,12 +16,12 @@ class AnalyzeVideoUseCase implements BaseUseCase<Result<VideoInfo>, String> {
   Future<Result<VideoInfo>> execute(String url) async {
     try {
       // Validate URL format
-      if (!_videoRepository.isValidVideoUrl(url)) {
+      if (!VideoInfoUtils.isValidVideoUrl(url)) {
         return Result.failure('Invalid YouTube video URL format');
       }
 
       // Extract video ID for additional validation
-      final videoId = _videoRepository.extractVideoId(url);
+      final videoId = VideoInfoUtils.extractVideoId(url);
       if (videoId == null) {
         return Result.failure('Could not extract video ID from URL');
       }

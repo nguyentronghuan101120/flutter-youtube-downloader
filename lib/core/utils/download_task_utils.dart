@@ -1,5 +1,6 @@
 import '../../domain/entities/download_task.dart';
 import '../constants/download_status.dart';
+import 'file_utils.dart';
 
 /// Utility class for DownloadTask operations
 class DownloadTaskUtils {
@@ -70,39 +71,96 @@ class DownloadTaskUtils {
 
   /// Checks if download can be resumed
   static bool canResume(DownloadTask task) =>
-      task.isResumable &&
-      (task.status == DownloadStatus.paused ||
-          task.status == DownloadStatus.failed);
+      task.status == DownloadStatus.paused;
 
-  /// Gets formatted file size
-  static String getFormattedFileSize(DownloadTask task) {
-    if (task.totalBytes == 0) return 'Unknown size';
+  /// Calculate download speed - unified method for all speed calculations
+  static String calculateSpeed(int bytesDownloaded, DateTime startTime) {
+    final elapsed = DateTime.now().difference(startTime).inSeconds;
+    if (elapsed == 0) return '0 KB/s';
 
-    const units = ['B', 'KB', 'MB', 'GB'];
-    double size = task.totalBytes.toDouble();
-    int unitIndex = 0;
-
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-
-    return '${size.toStringAsFixed(1)} ${units[unitIndex]}';
+    final bytesPerSecond = bytesDownloaded / elapsed;
+    return '${FileUtils.formatFileSize(bytesPerSecond.round())}/s';
   }
 
-  /// Gets formatted downloaded size
-  static String getFormattedDownloadedSize(DownloadTask task) {
-    if (task.bytesDownloaded == 0) return '0 B';
+  /// Calculate ETA - unified method for all ETA calculations
+  static String calculateEta(
+    int bytesDownloaded,
+    int totalBytes,
+    String speed,
+  ) {
+    if (bytesDownloaded <= 0 || totalBytes <= 0) return 'Calculating...';
 
-    const units = ['B', 'KB', 'MB', 'GB'];
-    double size = task.bytesDownloaded.toDouble();
-    int unitIndex = 0;
+    final remainingBytes = totalBytes - bytesDownloaded;
 
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
+    // Extract speed value from string (e.g., "1.5 MB/s" -> 1.5)
+    final speedMatch = RegExp(r'(\d+\.?\d*)').firstMatch(speed);
+    if (speedMatch == null) return 'Calculating...';
+
+    final speedValue = double.tryParse(speedMatch.group(1) ?? '0') ?? 0;
+    if (speedValue <= 0) return 'Calculating...';
+
+    // Convert speed to bytes per second
+    double bytesPerSecond;
+    if (speed.contains('MB/s')) {
+      bytesPerSecond = speedValue * 1024 * 1024;
+    } else if (speed.contains('KB/s')) {
+      bytesPerSecond = speedValue * 1024;
+    } else if (speed.contains('B/s')) {
+      bytesPerSecond = speedValue;
+    } else {
+      bytesPerSecond = speedValue;
     }
 
-    return '${size.toStringAsFixed(1)} ${units[unitIndex]}';
+    if (bytesPerSecond <= 0) return 'Calculating...';
+
+    final remainingSeconds = remainingBytes / bytesPerSecond;
+
+    if (remainingSeconds < 60) {
+      return '${remainingSeconds.round()}s';
+    } else if (remainingSeconds < 3600) {
+      return '${(remainingSeconds / 60).round()}m';
+    } else {
+      return '${(remainingSeconds / 3600).round()}h';
+    }
+  }
+
+  /// Calculate progress percentage
+  static double calculateProgressPercentage(DownloadTask task) {
+    return (task.progress * 100).clamp(0.0, 100.0);
+  }
+
+  /// Get formatted progress string
+  static String getProgressString(DownloadTask task) {
+    return '${calculateProgressPercentage(task).toStringAsFixed(1)}%';
+  }
+
+  /// Check if progress has changed significantly (for optimization)
+  static bool hasSignificantProgressChange(
+    DownloadTask oldTask,
+    DownloadTask newTask, {
+    double threshold = 0.01, // 1% threshold
+  }) {
+    return (newTask.progress - oldTask.progress).abs() >= threshold;
+  }
+
+  /// Get download duration
+  static Duration getDownloadDuration(DownloadTask task) {
+    if (task.startedAt == null) return Duration.zero;
+
+    final endTime = task.completedAt ?? DateTime.now();
+    return endTime.difference(task.startedAt!);
+  }
+
+  /// Get formatted duration string
+  static String getDurationString(DownloadTask task) {
+    final duration = getDownloadDuration(task);
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+
+    if (minutes > 0) {
+      return '${minutes}m ${seconds}s';
+    } else {
+      return '${seconds}s';
+    }
   }
 }

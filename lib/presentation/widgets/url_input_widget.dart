@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'common_button.dart';
+import '../../core/utils/video_info_utils.dart';
 
 class UrlInputWidget extends StatefulWidget {
   final Function(String) onUrlSubmitted;
@@ -48,8 +49,8 @@ class _UrlInputWidgetState extends State<UrlInputWidget> {
       return;
     }
 
-    final isValid = _isValidVideoUrl(url);
-    final videoId = _extractVideoId(url);
+    final isValid = VideoInfoUtils.isValidVideoUrl(url);
+    final videoId = VideoInfoUtils.extractVideoId(url);
 
     setState(() {
       _isValidUrl = isValid;
@@ -62,32 +63,6 @@ class _UrlInputWidgetState extends State<UrlInputWidget> {
         _validationMessage = 'Valid YouTube video URL';
       }
     });
-  }
-
-  /// Validates if the provided URL is a valid YouTube video URL
-  bool _isValidVideoUrl(String url) {
-    final youtubeVideoPattern = RegExp(
-      r'^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)[a-zA-Z0-9_-]{11}.*$',
-      caseSensitive: false,
-    );
-    return youtubeVideoPattern.hasMatch(url);
-  }
-
-  /// Extracts video ID from YouTube URL
-  String? _extractVideoId(String url) {
-    final patterns = [
-      RegExp(
-        r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})',
-      ),
-    ];
-
-    for (final pattern in patterns) {
-      final match = pattern.firstMatch(url);
-      if (match != null) {
-        return match.group(1);
-      }
-    }
-    return null;
   }
 
   void _submitUrl() {

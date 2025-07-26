@@ -1,4 +1,5 @@
 import '../entities/download_task.dart';
+import '../entities/download_progress.dart';
 import '../../core/result/result.dart';
 
 abstract class DownloadRepository {
@@ -88,6 +89,12 @@ abstract class DownloadRepository {
   /// [taskIds] - List of task IDs in new order
   /// Throws [Exception] if any task ID is invalid
   Future<Result<void>> reorderDownloadQueue(List<String> taskIds);
+
+  /// Gets real-time download progress stream
+  ///
+  /// [taskId] - The ID of the task to monitor
+  /// Returns a stream of download progress updates
+  Stream<DownloadProgress> getDownloadProgressStream(String taskId);
 }
 
 class StartDownloadParams {

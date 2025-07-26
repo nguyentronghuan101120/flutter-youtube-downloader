@@ -3,6 +3,7 @@ import '../entities/video_info.dart';
 import '../repositories/video_repository.dart';
 import '../../core/usecases/base_usecase.dart';
 import '../../core/result/result.dart';
+import '../../core/utils/video_info_utils.dart';
 
 @injectable
 class AnalyzePlaylistUseCase
@@ -16,12 +17,12 @@ class AnalyzePlaylistUseCase
   Future<Result<List<VideoInfo>>> execute(String playlistUrl) async {
     try {
       // Validate URL first
-      if (!_videoRepository.isValidPlaylistUrl(playlistUrl)) {
+      if (!VideoInfoUtils.isValidPlaylistUrl(playlistUrl)) {
         return Result.failure('Invalid YouTube playlist URL format');
       }
 
       // Extract playlist ID for additional validation
-      final playlistId = _videoRepository.extractPlaylistId(playlistUrl);
+      final playlistId = VideoInfoUtils.extractPlaylistId(playlistUrl);
       if (playlistId == null) {
         return Result.failure('Could not extract playlist ID from URL');
       }

@@ -50,26 +50,14 @@ class DownloadProgressWidget extends StatelessWidget {
       children: [
         Icon(task.status.icon, color: task.status.getColor(context)),
         const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                task.title,
-                style: Theme.of(context).textTheme.titleMedium,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                task.status.text,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: task.status.getColor(context),
-                ),
-              ),
-            ],
+        Flexible(
+          child: Text(
+            task.title,
+            style: Theme.of(context).textTheme.titleMedium,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        _buildStatusChip(context),
       ],
     );
   }
@@ -147,55 +135,51 @@ class DownloadProgressWidget extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        if (task.status == DownloadStatus.downloading && onPause != null)
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: onPause,
-              icon: const Icon(Icons.pause),
-              label: const Text('Pause'),
-            ),
-          ),
-        if (task.status == DownloadStatus.paused && onResume != null)
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: onResume,
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Resume'),
-            ),
-          ),
-        if (onCancel != null) ...[
-          if (task.status == DownloadStatus.downloading ||
-              task.status == DownloadStatus.paused)
-            const SizedBox(width: 8),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: onCancel,
-              icon: const Icon(Icons.stop),
-              label: const Text('Cancel'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+    final List<Widget> actionButtons = [];
 
-  Widget _buildStatusChip(BuildContext context) {
-    return Chip(
-      label: Text(
-        task.status.displayName,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
+    // Add primary action button based on status
+    if (task.status == DownloadStatus.downloading) {
+      actionButtons.add(
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onPause,
+            icon: const Icon(Icons.pause),
+            label: const Text('Pause'),
+          ),
+        ),
+      );
+    } else if (task.status == DownloadStatus.paused) {
+      actionButtons.add(
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onResume,
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Resume'),
+          ),
+        ),
+      );
+    } else {
+      // For other statuses, add empty space
+      actionButtons.add(const Expanded(child: SizedBox.shrink()));
+    }
+
+    // Add cancel button
+    if (actionButtons.isNotEmpty) {
+      actionButtons.add(const SizedBox(width: 8));
+    }
+    actionButtons.add(
+      Expanded(
+        child: OutlinedButton.icon(
+          onPressed: onCancel,
+          icon: const Icon(Icons.stop),
+          label: const Text('Cancel'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
         ),
       ),
-      backgroundColor: task.status.getColor(context),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
     );
+
+    return Row(children: actionButtons);
   }
 }

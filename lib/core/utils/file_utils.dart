@@ -60,4 +60,28 @@ class FileUtils {
     final extension = getFileExtension(path);
     return ['mp3', 'aac', 'ogg', 'wav', 'flac', 'm4a'].contains(extension);
   }
+
+  /// Format datetime to time string (HH:mm)
+  static String formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) {
+      return 'N/A';
+    }
+    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Format datetime to date string (dd/MM/yyyy)
+  static String formatDate(DateTime? dateTime) {
+    if (dateTime == null) {
+      return 'N/A';
+    }
+    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
+  }
+
+  /// Format datetime to full string (dd/MM/yyyy HH:mm)
+  static String formatDateTimeFull(DateTime? dateTime) {
+    if (dateTime == null) {
+      return 'N/A';
+    }
+    return '${formatDate(dateTime)} ${formatDateTime(dateTime)}';
+  }
 }
