@@ -16,10 +16,10 @@ class DownloadPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Check if there are active downloads when page loads
+    // Prepare download when page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Check if there are active downloads and load appropriate state
-      context.read<DownloadCubit>().checkAndLoadAppropriateState(videoInfo);
+      // Prepare download for the current video
+      context.read<DownloadCubit>().prepareDownload(videoInfo);
     });
 
     return Scaffold(
@@ -40,10 +40,8 @@ class DownloadPage extends StatelessWidget {
               );
               // Refresh the current page state when returning
               if (context.mounted) {
-                // Check if there are active downloads and load appropriate state
-                context.read<DownloadCubit>().checkAndLoadAppropriateState(
-                  videoInfo,
-                );
+                // Prepare download for the current video
+                context.read<DownloadCubit>().prepareDownload(videoInfo);
               }
             },
           ),
@@ -69,26 +67,19 @@ class DownloadPage extends StatelessWidget {
                   // Navigate to download status page
                   if (!context.mounted) return;
 
-                  final downloadStatusCubit = getIt<DownloadStatusCubit>();
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => BlocProvider(
-                        create: (context) => downloadStatusCubit,
+                        create: (context) => getIt<DownloadStatusCubit>(),
                         child: const DownloadStatusPage(),
                       ),
                     ),
                   );
 
-                  // Force refresh queue status when returning
+                  // Refresh the current page state when returning
                   if (context.mounted) {
-                    await downloadStatusCubit.forceRefreshQueueStatus();
-                    // Check if there are active downloads and load appropriate state
-                    if (context.mounted) {
-                      context.read<DownloadCubit>().checkAndLoadAppropriateState(
-                        videoInfo,
-                      );
-                    }
+                    context.read<DownloadCubit>().prepareDownload(videoInfo);
                   }
                 },
               ),

@@ -1,6 +1,9 @@
 import '../../domain/entities/download_task.dart';
 import '../constants/download_status.dart';
 import 'file_utils.dart';
+import 'dart:isolate';
+import 'dart:async';
+import 'dart:io';
 
 /// Utility class for DownloadTask operations
 class DownloadTaskUtils {
@@ -162,5 +165,79 @@ class DownloadTaskUtils {
     } else {
       return '${seconds}s';
     }
+  }
+
+  /// Calculate optimal chunk size based on file size
+  static int calculateOptimalChunkSize(int totalBytes) {
+    const int minChunkSize = 512 * 1024; // 512KB
+    const int maxChunkSize = 2 * 1024 * 1024; // 2MB
+    const int targetChunks = 8; // Target 8 chunks per download
+
+    final optimalChunkSize = totalBytes ~/ targetChunks;
+
+    if (optimalChunkSize < minChunkSize) return minChunkSize;
+    if (optimalChunkSize > maxChunkSize) return maxChunkSize;
+
+    return optimalChunkSize;
+  }
+
+  /// Generate chunk ranges for parallel download
+  static List<Map<String, int>> generateChunkRanges(
+    int totalBytes,
+    int chunkSize,
+  ) {
+    final chunks = <Map<String, int>>[];
+    int start = 0;
+
+    while (start < totalBytes) {
+      final end = (start + chunkSize - 1).clamp(0, totalBytes - 1);
+      chunks.add({'start': start, 'end': end, 'size': end - start + 1});
+      start = end + 1;
+    }
+
+    return chunks;
+  }
+
+  /// Run heavy computation in isolate
+  static Future<T> runInIsolate<T>(Future<T> Function() computation) async {
+    final receivePort = ReceivePort();
+    final isolate = await Isolate.spawn((SendPort sendPort) async {
+      try {
+        final result = await computation();
+        sendPort.send(result);
+      } catch (e) {
+        sendPort.send(e);
+      }
+    }, receivePort.sendPort);
+
+    final result = await receivePort.first;
+    isolate.kill();
+    receivePort.close();
+
+    if (result is Exception) {
+      throw result;
+    }
+    return result as T;
+  }
+
+  /// Merge downloaded chunks into final file
+  static Future<void> mergeChunks(
+    List<String> chunkPaths,
+    String outputPath,
+  ) async {
+    final outputFile = File(outputPath);
+    final outputStream = outputFile.openWrite();
+
+    for (final chunkPath in chunkPaths) {
+      final chunkFile = File(chunkPath);
+      if (await chunkFile.exists()) {
+        final chunkBytes = await chunkFile.readAsBytes();
+        outputStream.add(chunkBytes);
+        await chunkFile.delete(); // Clean up chunk file
+      }
+    }
+
+    await outputStream.flush();
+    await outputStream.close();
   }
 }

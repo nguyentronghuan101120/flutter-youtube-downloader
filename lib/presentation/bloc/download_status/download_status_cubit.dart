@@ -10,6 +10,7 @@ import '../../../domain/usecases/download/resume_download.dart';
 import '../../../domain/usecases/download/cancel_download.dart';
 import '../../../domain/usecases/download/get_download_progress_stream.dart';
 import '../../../domain/entities/download_progress.dart';
+import '../../../core/constants/app_constants.dart';
 import 'download_status_state.dart';
 
 @injectable
@@ -25,7 +26,6 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
   StreamSubscription<DownloadProgress>? _progressSubscription;
   String? _currentActiveTaskId;
   Timer? _queueRefreshTimer;
-  bool _isLoading = false;
 
   DownloadStatusCubit({
     required GetActiveDownloads getActiveDownloads,
@@ -52,9 +52,6 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
   }
 
   Future<void> loadQueueStatus() async {
-    if (_isLoading) return; // Prevent multiple simultaneous loads
-
-    _isLoading = true;
     emit(const DownloadStatusState.loading());
 
     try {
@@ -108,8 +105,6 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
       emit(
         DownloadStatusState.failed(message: 'Failed to load queue status: $e'),
       );
-    } finally {
-      _isLoading = false;
     }
   }
 
@@ -167,28 +162,21 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
     _currentActiveTaskId = null;
   }
 
-  // Start faster periodic refresh for queue status
+  // Start optimized periodic refresh for queue status
   void startPeriodicRefresh() {
-    _queueRefreshTimer?.cancel();
-    // Refresh every 500ms for faster realtime updates
-    _queueRefreshTimer = Timer.periodic(const Duration(milliseconds: 500), (
-      timer,
-    ) {
-      if (!_isLoading) {
+    stopPeriodicRefresh(); // Stop any existing timer first
+    // Refresh every 500ms for optimized performance
+    _queueRefreshTimer = Timer.periodic(
+      Duration(milliseconds: AppConstants.progressUpdateInterval),
+      (timer) {
         loadQueueStatus();
-      }
-    });
+      },
+    );
   }
 
   // Stop periodic refresh
   void stopPeriodicRefresh() {
     _queueRefreshTimer?.cancel();
-  }
-
-  // Force refresh queue status (useful when new downloads are added)
-  Future<void> forceRefreshQueueStatus() async {
-    _isLoading = false; // Reset loading state
-    await loadQueueStatus();
   }
 
   Future<void> pauseDownload(String taskId) async {

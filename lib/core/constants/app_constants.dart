@@ -1,3 +1,5 @@
+import 'dart:io';
+
 class AppConstants {
   static const String appName = 'YouTube Downloader';
   static const String appVersion = '1.0.0';
@@ -6,7 +8,20 @@ class AppConstants {
   // API Constants
   static const int connectionTimeout = 30000; // 30 seconds
   static const int receiveTimeout = 60000; // 60 seconds
-  static const int maxConcurrentDownloads = 5;
+
+  // Dynamic concurrent downloads based on CPU cores
+  static int get maxConcurrentDownloads {
+    try {
+      return Platform.numberOfProcessors;
+    } catch (e) {
+      return 4; // Fallback to 4 if cannot detect CPU cores
+    }
+  }
+
+  // Chunked download constants
+  static const int chunkSize = 1024 * 1024; // 1MB per chunk
+  static const int maxChunkConcurrency = 4; // Max chunks per download
+  static const int progressUpdateInterval = 500; // 500ms instead of 100ms
 
   // File Constants
   static const String defaultDownloadFolder = 'Downloads';

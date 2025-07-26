@@ -13,13 +13,11 @@ import 'download_state.dart';
 @injectable
 class DownloadCubit extends Cubit<DownloadState> {
   final StartDownload _startDownload;
-  final GetActiveDownloads _getActiveDownloads;
 
   DownloadCubit({
     required StartDownload startDownload,
     required GetActiveDownloads getActiveDownloads,
   }) : _startDownload = startDownload,
-       _getActiveDownloads = getActiveDownloads,
        super(const DownloadState.initial());
 
   Future<void> prepareDownload(VideoInfo videoInfo) async {
@@ -71,7 +69,7 @@ class DownloadCubit extends Cubit<DownloadState> {
         url: url,
         format: format,
         quality: quality,
-        outputPath: outputPath ?? await _getDefaultOutputPath(),
+        outputPath: outputPath ?? await _getDefaultOutputPath(format),
       );
 
       final result = await _startDownload.execute(params);
@@ -81,23 +79,8 @@ class DownloadCubit extends Cubit<DownloadState> {
           developer.log(
             '[download_cubit.dart] - Download started successfully: ${createdTask.title}',
           );
-          // Emit ready state to show format selection again
-          emit(
-            DownloadState.ready(
-              videoInfo: VideoInfo(
-                id: videoId,
-                title: createdTask.title,
-                author: 'Unknown',
-                duration: Duration.zero,
-                thumbnailUrl: '',
-                formats: [],
-                url: url,
-                viewCount: 0,
-              ),
-              videoStreams: [],
-              audioStreams: [],
-            ),
-          );
+          // Keep the current state instead of emitting ready state
+          // The download status page will handle showing the download progress
         },
         failure: (error) {
           emit(DownloadState.failed(message: error));
@@ -135,7 +118,8 @@ class DownloadCubit extends Cubit<DownloadState> {
             url: url,
             format: format['format']!,
             quality: format['quality']!,
-            outputPath: outputPath ?? await _getDefaultOutputPath(),
+            outputPath:
+                outputPath ?? await _getDefaultOutputPath(format['format']!),
           );
 
           final result = await _startDownload.execute(params);
@@ -162,23 +146,8 @@ class DownloadCubit extends Cubit<DownloadState> {
         }
       }
 
-      // Emit ready state to show format selection again
-      emit(
-        DownloadState.ready(
-          videoInfo: VideoInfo(
-            id: videoId,
-            title: 'Video_${DateTime.now().millisecondsSinceEpoch}',
-            author: 'Unknown',
-            duration: Duration.zero,
-            thumbnailUrl: '',
-            formats: [],
-            url: url,
-            viewCount: 0,
-          ),
-          videoStreams: [],
-          audioStreams: [],
-        ),
-      );
+      // Keep the current state instead of emitting ready state
+      // The download status page will handle showing the download progress
 
       // Show summary if there were failures
       if (failureCount > 0) {
@@ -191,36 +160,16 @@ class DownloadCubit extends Cubit<DownloadState> {
     }
   }
 
-  Future<void> checkAndLoadAppropriateState(VideoInfo videoInfo) async {
-    emit(const DownloadState.loading());
-
-    try {
-      final activeResult = await _getActiveDownloads.execute();
-
-      activeResult.when(
-        success: (activeDownloads) {
-          if (activeDownloads.isNotEmpty) {
-            // If there are active downloads, still show ready state for format selection
-            prepareDownload(videoInfo);
-          } else {
-            // If no active downloads, prepare download for the current video
-            prepareDownload(videoInfo);
-          }
-        },
-        failure: (failure) => emit(DownloadState.failed(message: failure)),
-      );
-    } catch (e) {
-      emit(
-        DownloadState.failed(message: 'Failed to check download status: $e'),
-      );
-    }
-  }
-
   String _extractTitle(String url) {
+    // Extract video ID and use it as part of the title
+    final videoId = VideoInfoUtils.extractVideoId(url);
+    if (videoId != null) {
+      return 'Video_${videoId}_${DateTime.now().millisecondsSinceEpoch}';
+    }
     return 'Video_${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  Future<String> _getDefaultOutputPath() async {
+  Future<String> _getDefaultOutputPath(String format) async {
     try {
       final externalDir = await getExternalStorageDirectory();
       if (externalDir != null) {
@@ -228,17 +177,17 @@ class DownloadCubit extends Cubit<DownloadState> {
         if (!await downloadsDir.exists()) {
           await downloadsDir.create(recursive: true);
         }
-        return '${downloadsDir.path}/video_${DateTime.now().millisecondsSinceEpoch}.mp4';
+        return '${downloadsDir.path}/video_${DateTime.now().millisecondsSinceEpoch}.$format';
       }
       final dir = await getApplicationDocumentsDirectory();
       final downloadsDir = Directory('${dir.path}/downloads');
       if (!await downloadsDir.exists()) {
         await downloadsDir.create(recursive: true);
       }
-      return '${downloadsDir.path}/video_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      return '${downloadsDir.path}/video_${DateTime.now().millisecondsSinceEpoch}.$format';
     } catch (e) {
       final tempDir = await getTemporaryDirectory();
-      return '${tempDir.path}/video_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      return '${tempDir.path}/video_${DateTime.now().millisecondsSinceEpoch}.$format';
     }
   }
 }

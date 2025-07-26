@@ -18,37 +18,39 @@ class DownloadStatusPage extends StatefulWidget {
 class _DownloadStatusPageState extends State<DownloadStatusPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  DownloadStatusCubit? _cubit;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-
-    // Load queue status when page loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final cubit = context.read<DownloadStatusCubit>();
-      cubit.loadQueueStatus();
-      // Start faster periodic refresh
-      cubit.startPeriodicRefresh();
-    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh when dependencies change (e.g., when returning to this page)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<DownloadStatusCubit>().forceRefreshQueueStatus();
-      }
-    });
+    // Save reference to cubit for safe access in dispose
+    _cubit = context.read<DownloadStatusCubit>();
+
+    // Load queue status when page loads (only once)
+    if (_cubit != null && !_isInitialized) {
+      _isInitialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _cubit != null) {
+          _cubit!.loadQueueStatus();
+          // Start faster periodic refresh
+          _cubit!.startPeriodicRefresh();
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    // Stop periodic refresh when page is disposed
-    context.read<DownloadStatusCubit>().stopPeriodicRefresh();
+    // Stop periodic refresh when page is disposed - use saved reference
+    _cubit?.stopPeriodicRefresh();
     super.dispose();
   }
 
@@ -67,10 +69,6 @@ class _DownloadStatusPageState extends State<DownloadStatusPage>
         ),
       ),
       body: BlocBuilder<DownloadStatusCubit, DownloadStatusState>(
-        buildWhen: (previous, current) {
-          // Only rebuild if state actually changed
-          return previous != current;
-        },
         builder: (context, state) {
           return state.when(
             initial: () => const Center(child: CircularProgressIndicator()),
@@ -114,18 +112,15 @@ class _DownloadStatusPageState extends State<DownloadStatusPage>
             progress: progress,
             speed: speed,
             eta: eta,
-            onPause: () =>
-                context.read<DownloadStatusCubit>().pauseDownload(task.id),
-            onResume: () =>
-                context.read<DownloadStatusCubit>().resumeDownload(task.id),
-            onCancel: () =>
-                context.read<DownloadStatusCubit>().cancelDownload(task.id),
+            onPause: () => _cubit?.pauseDownload(task.id),
+            onResume: () => _cubit?.resumeDownload(task.id),
+            onCancel: () => _cubit?.cancelDownload(task.id),
           ),
           const SizedBox(height: 16),
           // View all downloads button
           ElevatedButton.icon(
             onPressed: () {
-              context.read<DownloadStatusCubit>().loadQueueStatus();
+              _cubit?.loadQueueStatus();
             },
             icon: const Icon(Icons.list),
             label: const Text('View All Downloads'),
@@ -147,10 +142,8 @@ class _DownloadStatusPageState extends State<DownloadStatusPage>
         progress: progress,
         speed: '0 KB/s',
         eta: 'Paused',
-        onResume: () =>
-            context.read<DownloadStatusCubit>().resumeDownload(task.id),
-        onCancel: () =>
-            context.read<DownloadStatusCubit>().cancelDownload(task.id),
+        onResume: () => _cubit?.resumeDownload(task.id),
+        onCancel: () => _cubit?.cancelDownload(task.id),
       ),
     );
   }
@@ -440,8 +433,7 @@ class _DownloadStatusPageState extends State<DownloadStatusPage>
       actionButtons.add(
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () =>
-                context.read<DownloadStatusCubit>().pauseDownload(download.id),
+            onPressed: () => _cubit?.pauseDownload(download.id),
             icon: const Icon(Icons.pause),
             label: const Text('Pause'),
           ),
@@ -451,8 +443,7 @@ class _DownloadStatusPageState extends State<DownloadStatusPage>
       actionButtons.add(
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () =>
-                context.read<DownloadStatusCubit>().resumeDownload(download.id),
+            onPressed: () => _cubit?.resumeDownload(download.id),
             icon: const Icon(Icons.play_arrow),
             label: const Text('Resume'),
           ),
@@ -495,8 +486,7 @@ class _DownloadStatusPageState extends State<DownloadStatusPage>
       actionButtons.add(
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () =>
-                context.read<DownloadStatusCubit>().cancelDownload(download.id),
+            onPressed: () => _cubit?.cancelDownload(download.id),
             icon: const Icon(Icons.stop),
             label: const Text('Cancel'),
             style: OutlinedButton.styleFrom(
