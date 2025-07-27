@@ -82,9 +82,11 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
                   if (activeDownloads.isNotEmpty) {
                     final activeDownload = activeDownloads.first;
                     _startProgressStream(activeDownload.id);
+                    startPeriodicRefresh();
                   } else {
-                    // Stop any existing progress stream if no active downloads
+                    // Stop any existing progress stream and periodic refresh if no active downloads
                     _stopProgressStream();
+                    stopPeriodicRefresh();
                   }
                 },
                 failure: (error) {
@@ -190,6 +192,8 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
           );
           // Reload queue status to reflect the change
           loadQueueStatus();
+          // If no more active downloads, stop refresh
+          // (Handled in loadQueueStatus)
         },
         failure: (error) {
           emit(DownloadStatusState.failed(message: error));
@@ -211,6 +215,7 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
           );
           // Reload queue status to reflect the change
           loadQueueStatus();
+          // (Handled in loadQueueStatus)
         },
         failure: (error) {
           emit(DownloadStatusState.failed(message: error));
@@ -234,6 +239,7 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
           );
           // Reload queue status to reflect the change
           loadQueueStatus();
+          // (Handled in loadQueueStatus)
         },
         failure: (error) {
           emit(DownloadStatusState.failed(message: error));

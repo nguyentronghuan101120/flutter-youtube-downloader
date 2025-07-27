@@ -11,21 +11,21 @@ import '../../core/constants/download_status.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/video_info_utils.dart';
 import '../../core/utils/download_task_utils.dart';
-import '../../core/services/chunked_download_service.dart';
+import '../../core/utils/file_utils.dart';
 
 @LazySingleton(as: DownloadRepository)
 class DownloadRepositoryImpl implements DownloadRepository {
   final YoutubeExplode _yt;
-  final ChunkedDownloadService _chunkedDownloadService;
   final Map<String, DownloadTask> _downloadTasks = {};
   final Map<String, StreamController<DownloadProgress>> _progressControllers =
       {};
   final Map<String, Timer> _progressTimers = {};
   final Map<String, StreamSubscription> _activeDownloads = {};
 
-  DownloadRepositoryImpl()
-    : _yt = YoutubeExplode(),
-      _chunkedDownloadService = ChunkedDownloadService();
+  // Integrated chunked download functionality
+  final Map<String, Completer<void>> _activeChunkedDownloads = {};
+
+  DownloadRepositoryImpl() : _yt = YoutubeExplode();
 
   @override
   Future<Result<DownloadTask>> startDownload(StartDownloadParams params) async {
@@ -166,6 +166,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
         bytesDownloaded: stream.size.totalBytes,
       );
       _downloadTasks[task.id] = completedTask;
+      _cleanupProgress(task.id);
 
       developer.log(
         '[download_repository_impl.dart] - Download completed successfully: ${completedTask.title} (ID: ${task.id}) - Status: ${completedTask.status}',
@@ -193,6 +194,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
         errorMessage: e.toString(),
       );
       _downloadTasks[task.id] = failedTask;
+      _cleanupProgress(task.id);
       developer.log(
         '[download_repository_impl.dart] - Download error: $e (ID: ${task.id})',
       );
@@ -201,7 +203,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
     }
   }
 
-  /// Perform chunked download with parallel chunks
+  /// Perform chunked download with optimized streaming approach
   Future<void> _performChunkedDownload(
     DownloadTask task,
     dynamic stream,
@@ -215,36 +217,49 @@ class DownloadRepositoryImpl implements DownloadRepository {
         await directory.create(recursive: true);
       }
 
-      // Calculate optimal chunk size
-      final chunkSize = DownloadTaskUtils.calculateOptimalChunkSize(
-        stream.size.totalBytes,
-      );
-      final chunks = DownloadTaskUtils.generateChunkRanges(
-        stream.size.totalBytes,
-        chunkSize,
-      );
+      final totalBytes = stream.size.totalBytes;
 
       developer.log(
-        '[download_repository_impl.dart] - Starting chunked download: ${chunks.length} chunks, ${chunkSize ~/ 1024}KB per chunk',
+        '[download_repository_impl.dart] - Starting download: ${FileUtils.formatFileSize(totalBytes)} to ${file.path}',
       );
 
-      // Use chunked download service for optimized parallel download
-      await _chunkedDownloadService.downloadFile(
-        taskId: task.id,
-        stream: stream,
-        outputPath: task.outputPath,
-        onProgress: (progress, bytesDownloaded) {
-          // Update task progress
-          final currentTask = _downloadTasks[task.id];
-          if (currentTask != null) {
-            final updatedTask = currentTask.copyWith(
-              progress: progress,
-              bytesDownloaded: bytesDownloaded,
-            );
-            _downloadTasks[task.id] = updatedTask;
-          }
-        },
-      );
+      // Initialize tracking
+      _activeChunkedDownloads[task.id] = Completer<void>();
+
+      // Download file using optimized streaming
+      await _downloadStreamOptimized(task.id, stream, task.outputPath, (
+        progress,
+        bytesDownloaded,
+      ) {
+        // Update task progress
+        final currentTask = _downloadTasks[task.id];
+        if (currentTask != null) {
+          final updatedTask = currentTask.copyWith(
+            progress: progress,
+            bytesDownloaded: bytesDownloaded,
+          );
+          _downloadTasks[task.id] = updatedTask;
+        }
+      });
+
+      // Verify file was created and has correct size
+      if (await file.exists()) {
+        final fileSize = await file.length();
+        developer.log(
+          '[download_repository_impl.dart] - Download completed: ${file.path} (${FileUtils.formatFileSize(fileSize)})',
+        );
+
+        if (fileSize > 0) {
+          _activeChunkedDownloads[task.id]?.complete();
+        } else {
+          throw Exception('Downloaded file is empty');
+        }
+      } else {
+        throw Exception('Downloaded file was not created');
+      }
+
+      // Clean up tracking
+      _activeChunkedDownloads.remove(task.id);
 
       developer.log(
         '[download_repository_impl.dart] - Chunked download completed: ${file.path}',
@@ -254,8 +269,10 @@ class DownloadRepositoryImpl implements DownloadRepository {
         '[download_repository_impl.dart] - Chunked download error: $e',
       );
 
-      // Clean up partial files using service
-      await _chunkedDownloadService.cancelDownload(task.id);
+      // Clean up partial files
+      await _cleanupFailedDownload(task.id, task.outputPath);
+      _activeChunkedDownloads[task.id]?.completeError(e);
+      _activeChunkedDownloads.remove(task.id);
 
       final file = File(task.outputPath);
       if (await file.exists()) {
@@ -263,6 +280,109 @@ class DownloadRepositoryImpl implements DownloadRepository {
       }
 
       throw Exception('Chunked download failed: $e');
+    }
+  }
+
+  /// Download stream with optimized progress tracking
+  Future<void> _downloadStreamOptimized(
+    String taskId,
+    dynamic stream,
+    String outputPath,
+    Function(double progress, int bytesDownloaded) onProgress,
+  ) async {
+    try {
+      final file = File(outputPath);
+      final fileStream = file.openWrite();
+
+      // Get the video stream
+      final videoStream = _yt.videos.streamsClient.get(stream);
+
+      int bytesDownloaded = 0;
+      final totalBytes = stream.size.totalBytes;
+      final startTime = DateTime.now();
+      int lastProgressUpdate = 0;
+
+      await for (final chunk in videoStream) {
+        fileStream.add(chunk);
+        bytesDownloaded += chunk.length;
+
+        // Calculate progress
+        final progress = totalBytes > 0 ? bytesDownloaded / totalBytes : 0.0;
+
+        // Update progress every 100KB to avoid too frequent updates
+        if (bytesDownloaded - lastProgressUpdate >= 100 * 1024) {
+          onProgress(progress, bytesDownloaded);
+          lastProgressUpdate = bytesDownloaded;
+
+          // Log progress every 1MB
+          if (bytesDownloaded % (1024 * 1024) < chunk.length) {
+            final speed = DownloadTaskUtils.calculateSpeed(
+              bytesDownloaded,
+              startTime,
+            );
+            developer.log(
+              '[download_repository_impl.dart] - Progress: ${(progress * 100).toStringAsFixed(1)}% - $speed - ${FileUtils.formatFileSize(bytesDownloaded)}/${FileUtils.formatFileSize(totalBytes)}',
+            );
+          }
+        }
+      }
+
+      await fileStream.flush();
+      await fileStream.close();
+
+      // Final progress update
+      onProgress(1.0, totalBytes);
+
+      developer.log(
+        '[download_repository_impl.dart] - Stream download completed: ${FileUtils.formatFileSize(bytesDownloaded)}',
+      );
+    } catch (e) {
+      developer.log(
+        '[download_repository_impl.dart] - Stream download error: $e',
+      );
+      rethrow;
+    }
+  }
+
+  /// Cleanup failed download
+  Future<void> _cleanupFailedDownload(String taskId, String outputPath) async {
+    if (outputPath.isNotEmpty) {
+      final file = File(outputPath);
+      if (await file.exists()) {
+        await file.delete();
+        developer.log(
+          '[download_repository_impl.dart] - Cleaned up partial file: $outputPath',
+        );
+      }
+    }
+  }
+
+  /// Cancel chunked download and cleanup
+  Future<void> _cancelChunkedDownload(String taskId) async {
+    try {
+      final completer = _activeChunkedDownloads[taskId];
+      if (completer != null && !completer.isCompleted) {
+        completer.complete();
+      }
+
+      // Cleanup partial file
+      await _cleanupFailedDownload(taskId, '');
+
+      developer.log(
+        '[download_repository_impl.dart] - Download cancelled: $taskId',
+      );
+    } catch (e) {
+      developer.log(
+        '[download_repository_impl.dart] - Error cancelling download: $e',
+      );
+    }
+  }
+
+  /// Dispose chunked downloads
+  void _disposeChunkedDownloads() {
+    // Cancel all active downloads
+    for (final taskId in _activeChunkedDownloads.keys) {
+      _cancelChunkedDownload(taskId);
     }
   }
 
@@ -314,13 +434,14 @@ class DownloadRepositoryImpl implements DownloadRepository {
       }
 
       // Cancel chunked download
-      await _chunkedDownloadService.cancelDownload(taskId);
+      await _cancelChunkedDownload(taskId);
 
       final pausedTask = task.copyWith(
         status: DownloadStatus.paused,
         pausedAt: DateTime.now(),
       );
       _downloadTasks[taskId] = pausedTask;
+      _cleanupProgress(taskId);
       return Result.success(pausedTask);
     } catch (e) {
       return Result.failure('Failed to pause download: $e');
@@ -360,8 +481,8 @@ class DownloadRepositoryImpl implements DownloadRepository {
         _activeDownloads.remove(taskId);
       }
 
-      // Clean up chunk files using service
-      await _chunkedDownloadService.cancelDownload(taskId);
+      // Clean up chunk files
+      await _cancelChunkedDownload(taskId);
 
       // Clean up partial file
       final file = File(task.outputPath);
@@ -370,6 +491,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
       }
 
       _downloadTasks.remove(taskId);
+      _cleanupProgress(taskId);
       return const Result.success(null);
     } catch (e) {
       return Result.failure('Failed to cancel download: $e');
@@ -545,6 +667,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
         success: (tasks) {
           for (final task in tasks) {
             _downloadTasks.remove(task.id);
+            _cleanupProgress(task.id);
           }
         },
         failure: (_) {},
@@ -563,6 +686,7 @@ class DownloadRepositoryImpl implements DownloadRepository {
         success: (tasks) {
           for (final task in tasks) {
             _downloadTasks.remove(task.id);
+            _cleanupProgress(task.id);
           }
         },
         failure: (_) {},
@@ -679,6 +803,15 @@ class DownloadRepositoryImpl implements DownloadRepository {
     return 'task_${DateTime.now().millisecondsSinceEpoch}';
   }
 
+  void _cleanupProgress(String taskId) {
+    // Cancel and remove timer
+    _progressTimers[taskId]?.cancel();
+    _progressTimers.remove(taskId);
+    // Close and remove stream controller
+    _progressControllers[taskId]?.close();
+    _progressControllers.remove(taskId);
+  }
+
   void dispose() {
     for (final timer in _progressTimers.values) {
       timer.cancel();
@@ -695,8 +828,8 @@ class DownloadRepositoryImpl implements DownloadRepository {
     }
     _activeDownloads.clear();
 
-    // Clean up all chunk files using service
-    _chunkedDownloadService.dispose();
+    // Clean up all chunk files
+    _disposeChunkedDownloads();
 
     _yt.close();
   }
