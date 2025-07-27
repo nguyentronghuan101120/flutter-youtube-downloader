@@ -95,6 +95,24 @@ abstract class DownloadRepository {
   /// [taskId] - The ID of the task to monitor
   /// Returns a stream of download progress updates
   Stream<DownloadProgress> getDownloadProgressStream(String taskId);
+
+  /// Checks if file is in system Downloads folder
+  ///
+  /// [filePath] - The file path to check
+  /// Returns true if file is in system Downloads folder
+  bool isInSystemDownloads(String filePath);
+
+  /// Opens a file using system default application
+  ///
+  /// [filePath] - The file path to open
+  /// Returns true if file was opened successfully
+  Future<bool> openFile(String filePath);
+
+  /// Moves a file to system Downloads folder (macOS only)
+  ///
+  /// [filePath] - The file path to move
+  /// Returns the new path if successful, null if failed
+  Future<String?> moveToSystemDownloads(String filePath);
 }
 
 class StartDownloadParams {

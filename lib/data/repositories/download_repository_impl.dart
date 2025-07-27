@@ -179,6 +179,9 @@ class DownloadRepositoryImpl implements DownloadRepository {
         developer.log(
           '[download_repository_impl.dart] - File verified: ${file.path} - Size: $fileSize bytes',
         );
+
+        // Try to move file to system Downloads folder on macOS
+        await _moveToSystemDownloadsIfNeeded(completedTask);
       } else {
         developer.log(
           '[download_repository_impl.dart] - WARNING: File not found after download: ${file.path}',
@@ -200,6 +203,175 @@ class DownloadRepositoryImpl implements DownloadRepository {
       );
       // Process next item in queue even on error
       _processQueue();
+    }
+  }
+
+  /// Move file to system Downloads folder if on macOS and not already there
+  Future<void> _moveToSystemDownloadsIfNeeded(DownloadTask task) async {
+    try {
+      if (!Platform.isMacOS) {
+        return; // Only for macOS
+      }
+
+      // Check if file is already in system Downloads
+      if (_isInSystemDownloads(task.outputPath)) {
+        developer.log(
+          '[download_repository_impl.dart] - File already in system Downloads: ${task.outputPath}',
+        );
+        return;
+      }
+
+      // Try to move file to system Downloads
+      final newPath = await _moveToSystemDownloads(task.outputPath);
+      if (newPath != null) {
+        // Update task with new path
+        final updatedTask = task.copyWith(outputPath: newPath);
+        _downloadTasks[task.id] = updatedTask;
+
+        developer.log(
+          '[download_repository_impl.dart] - File moved to system Downloads: $newPath',
+        );
+      } else {
+        developer.log(
+          '[download_repository_impl.dart] - Failed to move file to system Downloads: ${task.outputPath}',
+        );
+      }
+    } catch (e) {
+      developer.log(
+        '[download_repository_impl.dart] - Error moving file to system Downloads: $e',
+      );
+    }
+  }
+
+  /// Move downloaded file to system Downloads folder (macOS only)
+  /// Returns the new path if successful, null if failed
+  Future<String?> _moveToSystemDownloads(String filePath) async {
+    try {
+      if (!Platform.isMacOS) {
+        developer.log(
+          '[download_repository_impl.dart] - _moveToSystemDownloads: Only supported on macOS',
+        );
+        return null;
+      }
+
+      final sourceFile = File(filePath);
+      if (!await sourceFile.exists()) {
+        developer.log(
+          '[download_repository_impl.dart] - _moveToSystemDownloads: Source file does not exist: $filePath',
+        );
+        return null;
+      }
+
+      final systemDownloadsPath = await _getSystemDownloadsPath();
+      if (systemDownloadsPath == null) {
+        developer.log(
+          '[download_repository_impl.dart] - _moveToSystemDownloads: Could not get system downloads path',
+        );
+        return null;
+      }
+
+      final fileName = sourceFile.uri.pathSegments.last;
+      final destinationPath = '$systemDownloadsPath/$fileName';
+
+      // Check if file already exists in destination
+      final destFile = File(destinationPath);
+      if (await destFile.exists()) {
+        // Add timestamp to avoid conflicts
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+        final extension = fileName.substring(fileName.lastIndexOf('.'));
+        final newFileName = '${nameWithoutExt}_$timestamp$extension';
+        final newDestinationPath = '$systemDownloadsPath/$newFileName';
+
+        await sourceFile.copy(newDestinationPath);
+        await sourceFile.delete();
+
+        developer.log(
+          '[download_repository_impl.dart] - _moveToSystemDownloads: File moved with timestamp: $newDestinationPath',
+        );
+        return newDestinationPath;
+      } else {
+        // Move file directly
+        await sourceFile.rename(destinationPath);
+
+        developer.log(
+          '[download_repository_impl.dart] - _moveToSystemDownloads: File moved successfully: $destinationPath',
+        );
+        return destinationPath;
+      }
+    } catch (e) {
+      developer.log(
+        '[download_repository_impl.dart] - _moveToSystemDownloads: Error moving file: $e',
+      );
+      return null;
+    }
+  }
+
+  /// Get system Downloads path
+  Future<String?> _getSystemDownloadsPath() async {
+    try {
+      if (Platform.isMacOS) {
+        final homePath = Platform.environment['HOME'];
+        if (homePath != null) {
+          final downloadsDir = Directory('$homePath/Downloads');
+          if (await downloadsDir.exists()) {
+            return downloadsDir.path;
+          }
+        }
+      } else if (Platform.isWindows) {
+        final homePath = Platform.environment['USERPROFILE'];
+        if (homePath != null) {
+          final downloadsDir = Directory('$homePath/Downloads');
+          if (await downloadsDir.exists()) {
+            return downloadsDir.path;
+          }
+        }
+      } else if (Platform.isLinux) {
+        final homePath = Platform.environment['HOME'];
+        if (homePath != null) {
+          final downloadsDir = Directory('$homePath/Downloads');
+          if (await downloadsDir.exists()) {
+            return downloadsDir.path;
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      developer.log(
+        '[download_repository_impl.dart] - _getSystemDownloadsPath: Error getting system downloads path: $e',
+      );
+      return null;
+    }
+  }
+
+  /// Check if file is in system Downloads folder
+  bool _isInSystemDownloads(String filePath) {
+    try {
+      if (Platform.isMacOS) {
+        final homePath = Platform.environment['HOME'];
+        if (homePath != null) {
+          final downloadsDir = '$homePath/Downloads';
+          return filePath.startsWith(downloadsDir);
+        }
+      } else if (Platform.isWindows) {
+        final homePath = Platform.environment['USERPROFILE'];
+        if (homePath != null) {
+          final downloadsDir = '$homePath/Downloads';
+          return filePath.startsWith(downloadsDir);
+        }
+      } else if (Platform.isLinux) {
+        final homePath = Platform.environment['HOME'];
+        if (homePath != null) {
+          final downloadsDir = '$homePath/Downloads';
+          return filePath.startsWith(downloadsDir);
+        }
+      }
+      return false;
+    } catch (e) {
+      developer.log(
+        '[download_repository_impl.dart] - _isInSystemDownloads: Error checking path: $e',
+      );
+      return false;
     }
   }
 
@@ -810,6 +982,32 @@ class DownloadRepositoryImpl implements DownloadRepository {
     // Close and remove stream controller
     _progressControllers[taskId]?.close();
     _progressControllers.remove(taskId);
+  }
+
+  @override
+  bool isInSystemDownloads(String filePath) {
+    return _isInSystemDownloads(filePath);
+  }
+
+  @override
+  Future<bool> openFile(String filePath) async {
+    try {
+      // This would typically use url_launcher or similar package
+      developer.log(
+        '[download_repository_impl.dart] - Opening file: $filePath',
+      );
+      // TODO: Implement file opening functionality using url_launcher
+      // For now, just return true as placeholder
+      return true;
+    } catch (e) {
+      developer.log('[download_repository_impl.dart] - Error opening file: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<String?> moveToSystemDownloads(String filePath) async {
+    return await _moveToSystemDownloads(filePath);
   }
 
   void dispose() {

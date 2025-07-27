@@ -9,6 +9,9 @@ import '../../../domain/usecases/download/pause_download.dart';
 import '../../../domain/usecases/download/resume_download.dart';
 import '../../../domain/usecases/download/cancel_download.dart';
 import '../../../domain/usecases/download/get_download_progress_stream.dart';
+import '../../../domain/usecases/download/is_in_system_downloads.dart';
+import '../../../domain/usecases/download/open_file.dart';
+import '../../../domain/usecases/download/move_to_system_downloads.dart';
 import '../../../domain/entities/download_progress.dart';
 import '../../../core/constants/app_constants.dart';
 import 'download_status_state.dart';
@@ -22,6 +25,9 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
   final ResumeDownload _resumeDownload;
   final CancelDownload _cancelDownload;
   final GetDownloadProgressStream _getDownloadProgressStream;
+  final IsInSystemDownloads _isInSystemDownloads;
+  final OpenFile _openFile;
+  final MoveToSystemDownloads _moveToSystemDownloads;
 
   StreamSubscription<DownloadProgress>? _progressSubscription;
   String? _currentActiveTaskId;
@@ -35,6 +41,9 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
     required ResumeDownload resumeDownload,
     required CancelDownload cancelDownload,
     required GetDownloadProgressStream getDownloadProgressStream,
+    required IsInSystemDownloads isInSystemDownloads,
+    required OpenFile openFile,
+    required MoveToSystemDownloads moveToSystemDownloads,
   }) : _getActiveDownloads = getActiveDownloads,
        _getQueuedDownloads = getQueuedDownloads,
        _getCompletedDownloads = getCompletedDownloads,
@@ -42,6 +51,9 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
        _resumeDownload = resumeDownload,
        _cancelDownload = cancelDownload,
        _getDownloadProgressStream = getDownloadProgressStream,
+       _isInSystemDownloads = isInSystemDownloads,
+       _openFile = openFile,
+       _moveToSystemDownloads = moveToSystemDownloads,
        super(const DownloadStatusState.initial());
 
   @override
@@ -249,6 +261,37 @@ class DownloadStatusCubit extends Cubit<DownloadStatusState> {
       emit(
         DownloadStatusState.failed(message: 'Failed to cancel download: $e'),
       );
+    }
+  }
+
+  Future<bool> isInSystemDownloads(String filePath) async {
+    try {
+      return await _isInSystemDownloads.execute(filePath);
+    } catch (e) {
+      developer.log(
+        '[download_status_cubit.dart] - Error checking system downloads: $e',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> openFile(String filePath) async {
+    try {
+      return await _openFile.execute(filePath);
+    } catch (e) {
+      developer.log('[download_status_cubit.dart] - Error opening file: $e');
+      return false;
+    }
+  }
+
+  Future<String?> moveToSystemDownloads(String filePath) async {
+    try {
+      return await _moveToSystemDownloads.execute(filePath);
+    } catch (e) {
+      developer.log(
+        '[download_status_cubit.dart] - Error moving file to system downloads: $e',
+      );
+      return null;
     }
   }
 }

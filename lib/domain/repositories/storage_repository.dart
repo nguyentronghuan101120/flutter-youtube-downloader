@@ -37,4 +37,11 @@ abstract class StorageRepository {
 
   /// Lấy đường dẫn thư mục Downloads của hệ thống (nếu có thể truy cập)
   Future<String?> getSystemDownloadsPath();
+
+  /// Di chuyển file đã tải về thư mục Downloads hệ thống (chỉ hỗ trợ macOS)
+  /// Trả về đường dẫn mới nếu thành công, null nếu thất bại
+  Future<String?> moveToSystemDownloads(String filePath);
+
+  /// Kiểm tra file có nằm trong thư mục Downloads hệ thống không
+  bool isInSystemDownloads(String filePath);
 }
